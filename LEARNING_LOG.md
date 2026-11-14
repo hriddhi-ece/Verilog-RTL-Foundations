@@ -1,10 +1,10 @@
-# 📖 VLSI Learning Log & Methodology
+# VLSI Learning Log & Methodology
 
-This log is an ongoing journal documenting my module-by-module progression through my VLSI coursework. It includes detailed verification setups, personal coding rules, and all visual artifacts generated from AMD/Xilinx Vivado.
+This log documents my module-by-module progression through my VLSI coursework. It includes detailed verification setups, personal coding rules, and all visual artifacts generated from AMD/Xilinx Vivado.
 
 ---
 
-## 🚧 Upcoming / In-Progress Modules
+## Upcoming / In-Progress Modules
 * Procedural Loops (`for`, `while`)
 * Structural Loop implementations (`generate` blocks)
 
@@ -33,7 +33,7 @@ Select-line verification was executed using the cascaded clock methodology. I as
 4. **Behavioral:** Half Adder (`HA_case.v`) implemented via procedural `case` statements to observe LUT/Multiplexer hardware inference.
 
 ### Verification Methodology: GUI Force Clocks
-Instead of writing manual Verilog testbenches, I utilized Vivado's `Force Clock` continuous stimulus. By assigning cascading clock periods (400ns, 200ns, 100ns) to the input ports within the GUI, the simulator automatically cycles through all $2^n$ potential binary states.
+Instead of writing manual Verilog testbenches, I utilized Vivado's `Force Clock` continuous stimulus. By assigning cascading clock periods (400ns, 200ns, 100ns) to the input ports within the GUI, the simulator automatically cycles through all potential binary states.
 
 *(Manual Force Clock Configuration & Truth Table Reference)*
 ![Force Clock Settings](01_Adders_basics/images/FA_force_clocks.png)
@@ -49,7 +49,7 @@ Instead of writing manual Verilog testbenches, I utilized Vivado's `Force Clock`
 
 ---
 
-## 📌 Personal Coding Guidelines & Rules (Continuously Updated)
+## Personal Coding Guidelines & Rules
 * **Assignment Rules:** Strictly use Blocking Assignments (`=`) for combinational logic and Non-Blocking Assignments (`<=`) for sequential logic inside clocked `always` blocks.
 * **Procedural Constructs:** Conditional statements (`if-else`, `case`, `for` loops) cannot stand alone; they must be encapsulated within an `always` or `initial` procedural block.
 * **Hardware Datatypes:** Any signal driven from within an `always` block must be declared as a `reg` data type, while continuous assignments outside procedural blocks must drive `wire` nets.
