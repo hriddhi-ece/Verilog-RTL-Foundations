@@ -1,39 +1,45 @@
-# VLSI Learning Log & Methodology
+# VLSI Learning Log & Engineering Methodology
 
-This log documents my progression through my VLSI coursework. It serves as an engineering reference for hardware concepts, verification setups, personal coding rules, and Vivado synthesis artifacts.
+**Purpose:** This document serves as a technical engineering methodology log tracking my progression through the Internshala VLSI coursework. It captures design implementations, synthesis insights, verification strategies, and core RTL coding principles.
 
-*Note: All practical assignments (e.g., ALU design, pattern detectors) are being batched and will be executed and documented simultaneously upon completion of the theoretical coursework.*
+**Course Objective:** To transition from theoretical digital logic to practical, synthesizable hardware design using Verilog HDL and AMD/Xilinx Vivado.
+
+**Learning Outcomes:** 
+* Mastery of Gate-Level, Dataflow, Structural, and Behavioral RTL modeling.
+* Understanding the physical synthesis impact of procedural constructs and assignments.
+* Testbench-free waveform verification using continuous GUI stimulus.
+
+*(Note: Comprehensive practical assignments, such as the 8-bit ALU and FSM Pattern Detectors, are batched for execution upon completion of core theoretical modules.)*
 
 ---
 
-## Module 02 (Part B): Core HDL Concepts (Data Types, Operators & Loops)
+## Module 02 (Part B): Core HDL Concepts & Data Types
 
-### Hardware Data Types
-* **`wire` (Nets):** Represents physical connections between structural entities. Must be driven continuously (e.g., via `assign` or module instantiation outputs). They do not store values[cite: 29].
-* **`reg` (Registers):** Storage elements used to hold values across time. Must be used when a signal is driven from within a procedural block (`initial` or `always`). Despite the name, a `reg` does not always synthesize into a physical hardware register (flip-flop); it can infer combinational logic if not clocked[cite: 30].
+### Theory: Hardware Data Types
+* **`wire` (Nets):** A net type used for physical connections and combinational outputs. It must be driven continuously (e.g., via `assign` or module instantiation) and does not inherently store values.
+* **`reg` (Procedural Variables):** A procedural variable driven from within a procedural block (`initial` or `always`). Depending on the context and coding style, a `reg` may synthesize to a physical flip-flop, a latch, or purely combinational logic.
 
-### Verilog Operators & Hardware Impact
-* **Concatenation `{}`:** Used to combine scalar or vector nets into a larger bus. (e.g., `assign {Cout, Sum} = A + B + Cin;` maps the arithmetic carry to the MSB and sum to the LSB)[cite: 13].
-* **Logical vs. Bitwise:** Bitwise operators (`&`, `|`, `^`) generate parallel hardware gates for each bit in a bus[cite: 98]. Logical operators (`&&`, `||`, `!`) evaluate to a single scalar boolean true/false (1/0), typically used for conditional routing[cite: 98].
+### Theory: Procedural Loops in Synthesis
+* **Synthesizable Loops (`for`):** Can be synthesized into hardware provided the loop bounds are static, allowing the synthesizer to unroll the loop and generate parallel physical gates.
+* **Non-Synthesizable Loops (`while`, `forever`):** Dynamic `while` loops are generally not synthesizable for RTL because the loop iteration count is not static. `forever` loops are restricted entirely to testbench stimulus generation.
 
-### Procedural Loops in Hardware
-Unlike software, Verilog loops are evaluated by a synthesizer to generate physical hardware architecture.
-* **Synthesizable Loops:** 
-  * `for`: The compiler evaluates the start/stop conditions and unrolls the loop, stamping out duplicate parallel hardware for each iteration[cite: 96, 98].
-  * `repeat`: Executes assignments a fixed, predetermined number of times, which can also be unrolled into hardware[cite: 94].
-* **Non-Synthesizable Loops (Verification Only):**
-  * `forever`: Executes infinitely. Used strictly in testbenches (e.g., generating a continuous clock stimulus)[cite: 93].
-  * `while`: Executes based on dynamic condition checks. Cannot be accurately mapped to static gate-level hardware and is restricted to simulation/testbenches[cite: 95].
+### Theory: Verilog Operators
+* **Concatenation `{}`:** Combines scalar or vector nets into a wider bus (e.g., `assign {cout, sum} = a + b;`).
+* **Bitwise vs. Logical:** Bitwise operators (`&`, `|`, `^`) map directly to parallel hardware gates for each bit in a bus. Logical operators (`&&`, `||`, `!`) evaluate to a single scalar boolean (1/0) for conditional routing.
 
 ---
 
 ## Module 02 (Part A): Multiplexer Architectures (`02_Multiplexers/`)
 
-### Design Progression
-* **Behavioral Modeling:** 2-to-1 Multiplexer (`MUX_2x1.v`) designed utilizing procedural `always` blocks and `if-else` conditional routing.
+### Concept & Design Approach
+* **Implementation:** 2-to-1 Multiplexer (`MUX_2x1.v`).
+* **Design Style:** Behavioral Modeling. Utilized procedural `always @*` blocks and `if-else` conditional routing.
 
-### Verification Methodology
-Select-line verification was executed using the cascaded clock methodology. I assigned the select line (S) the highest frequency (100ns period) to visually validate the dynamic routing of the slower data channels (I0 at 400ns, I1 at 200ns) to the output net.
+### Synthesis Insight
+The use of `if-else` inside a combinational `always` block successfully instructs the Vivado synthesizer to infer a dedicated hardware multiplexer rather than generic logic gates.
+
+### Verification Method
+Select-line verification was executed using cascaded clocks. The select line (S) was assigned a 100ns period to validate the dynamic routing of the slower data channels (I0 at 400ns, I1 at 200ns) to the output net.
 
 *(2x1 MUX RTL Schematic & Simulation Waveform)*
 ![2x1 MUX Schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
@@ -43,14 +49,18 @@ Select-line verification was executed using the cascaded clock methodology. I as
 
 ## Module 01: Combinational Arithmetic (`01_Adders_basics/`)
 
-### Design Progression
-1. **Gate-Level:** Half Adder (`HA_gate.v`) wired using explicit `xor` and `and` primitives.
-2. **Dataflow:** Half Adder built using arithmetic concatenation (`half_adder_data.v`) and bitwise operators (`half_adder_data1.v`). Full Adder (`FA_data.v`) built via continuous `assign` statements.
-3. **Structural:** Full Adder (`FA_using_HA.v`) constructed by instantiating sub-modules (`HA_gate.v`) and mapping the internal nets.
-4. **Behavioral:** Half Adder (`HA_case.v`) implemented via procedural `case` statements to observe LUT/Multiplexer hardware inference.
+### Concept & Design Approach
+* **Gate-Level:** Half Adder (`HA_gate.v`) wired using explicit `xor` and `and` primitives.
+* **Dataflow:** Half Adder built using arithmetic concatenation (`half_adder_data.v`) and bitwise operators (`half_adder_data1.v`). Full Adder (`FA_data.v`) built via continuous `assign` statements.
+* **Structural:** Full Adder (`FA_using_HA.v`) constructed by instantiating sub-modules (`HA_gate.v`) and hierarchically mapping internal nets.
+* **Behavioral:** Half Adder (`HA_case.v`) implemented via procedural `case` statements.
 
-### Verification Methodology: GUI Force Clocks
-Instead of writing manual Verilog testbenches, I utilized Vivado's `Force Clock` continuous stimulus. By assigning cascading clock periods (400ns, 200ns, 100ns) to the input ports within the GUI, the simulator automatically cycles through all potential binary states.
+### Synthesis Insight
+* Behavioral modeling using `case` statements allows the synthesizer to efficiently infer LUTs (Look-Up Tables) from truth table definitions.
+* Omitting a `default` fallback in a combinational `case` block causes the synthesizer to inject unintentional memory latches, violating strict combinational timing closures.
+
+### Verification Method
+Verification was performed via automated truth table validation utilizing Vivado's `Force Clock` GUI methodology. By assigning cascading clock periods (400ns, 200ns, 100ns) to input ports, the simulator cycled through all binary states.
 
 *(Manual Force Clock Configuration & Truth Table Reference)*
 ![Force Clock Settings](01_Adders_basics/images/FA_force_clocks.png)
@@ -63,10 +73,3 @@ Instead of writing manual Verilog testbenches, I utilized Vivado's `Force Clock`
 *(Half Adder via Case Statement: Synthesized LUT/MUX Schematic & Waveform)*
 ![Half Adder Case Schematic](01_Adders_basics/images/HA_case_schematic.png)
 ![Half Adder Case Waveform](01_Adders_basics/images/HA_case_sim.png)
-
----
-
-## Personal Coding Guidelines & Rules
-* **Assignment Rules:** Strictly use Blocking Assignments (`=`) for combinational logic and Non-Blocking Assignments (`<=`) for sequential logic inside clocked `always` blocks.
-* **Procedural Constructs:** Conditional statements (`if-else`, `case`, `for` loops) cannot stand alone; they must be encapsulated within an `always` or `initial` procedural block.
-* **Hardware Datatypes:** Any signal driven from within an `always` block must be declared as a `reg` data type, while continuous assignments outside procedural blocks must drive `wire` nets.
