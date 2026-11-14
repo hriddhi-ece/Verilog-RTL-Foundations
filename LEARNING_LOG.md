@@ -1,16 +1,33 @@
 # VLSI Learning Log & Methodology
 
-This log documents my module-by-module progression through my VLSI coursework. It includes detailed verification setups, personal coding rules, and all visual artifacts generated from AMD/Xilinx Vivado.
+This log documents my progression through my VLSI coursework. It serves as an engineering reference for hardware concepts, verification setups, personal coding rules, and Vivado synthesis artifacts.
+
+*Note: All practical assignments (e.g., ALU design, pattern detectors) are being batched and will be executed and documented simultaneously upon completion of the theoretical coursework.*
 
 ---
 
-## Upcoming / In-Progress Modules
-* Procedural Loops (`for`, `while`)
-* Structural Loop implementations (`generate` blocks)
+## Module 02 (Part B): Core HDL Concepts (Data Types, Operators & Loops)
+
+### Hardware Data Types
+* **`wire` (Nets):** Represents physical connections between structural entities. Must be driven continuously (e.g., via `assign` or module instantiation outputs). They do not store values[cite: 29].
+* **`reg` (Registers):** Storage elements used to hold values across time. Must be used when a signal is driven from within a procedural block (`initial` or `always`). Despite the name, a `reg` does not always synthesize into a physical hardware register (flip-flop); it can infer combinational logic if not clocked[cite: 30].
+
+### Verilog Operators & Hardware Impact
+* **Concatenation `{}`:** Used to combine scalar or vector nets into a larger bus. (e.g., `assign {Cout, Sum} = A + B + Cin;` maps the arithmetic carry to the MSB and sum to the LSB)[cite: 13].
+* **Logical vs. Bitwise:** Bitwise operators (`&`, `|`, `^`) generate parallel hardware gates for each bit in a bus[cite: 98]. Logical operators (`&&`, `||`, `!`) evaluate to a single scalar boolean true/false (1/0), typically used for conditional routing[cite: 98].
+
+### Procedural Loops in Hardware
+Unlike software, Verilog loops are evaluated by a synthesizer to generate physical hardware architecture.
+* **Synthesizable Loops:** 
+  * `for`: The compiler evaluates the start/stop conditions and unrolls the loop, stamping out duplicate parallel hardware for each iteration[cite: 96, 98].
+  * `repeat`: Executes assignments a fixed, predetermined number of times, which can also be unrolled into hardware[cite: 94].
+* **Non-Synthesizable Loops (Verification Only):**
+  * `forever`: Executes infinitely. Used strictly in testbenches (e.g., generating a continuous clock stimulus)[cite: 93].
+  * `while`: Executes based on dynamic condition checks. Cannot be accurately mapped to static gate-level hardware and is restricted to simulation/testbenches[cite: 95].
 
 ---
 
-## Module 02: Multiplexer Architectures (`02_Multiplexers/`)
+## Module 02 (Part A): Multiplexer Architectures (`02_Multiplexers/`)
 
 ### Design Progression
 * **Behavioral Modeling:** 2-to-1 Multiplexer (`MUX_2x1.v`) designed utilizing procedural `always` blocks and `if-else` conditional routing.

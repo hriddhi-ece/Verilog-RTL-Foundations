@@ -1,6 +1,6 @@
 # Verilog RTL Foundations
 
-*Current Status: Active (Currently implementing procedural constructs and loops)*
+*Current Status: Active (Documenting core HDL theory; Practical hardware assignments scheduled for execution upon course completion)*
 
 A hardware design portfolio documenting my progression through the Internshala VLSI course. All digital circuits are manually coded, synthesized, and verified using Verilog HDL and AMD/Xilinx Vivado.
 
@@ -26,4 +26,4 @@ A hardware design portfolio documenting my progression through the Internshala V
 3. Run RTL Analysis to generate schematics, or launch Simulation and apply Force Clocks to input nodes to verify waveforms.
 
 ---
-**Detailed Module Notes:** For a chronological breakdown of my methodology and all simulation artifacts, see my [LEARNING_LOG.md](./LEARNING_LOG.md).
+**Detailed Module Notes:** For a chronological breakdown of my methodology, theoretical notes, and all simulation artifacts, see my [LEARNING_LOG.md](./LEARNING_LOG.md).
