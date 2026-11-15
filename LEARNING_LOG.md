@@ -1,115 +1,118 @@
-# VLSI Learning Log & Lab Notes
+# VLSI and RTL Design Learning Log
 
-This is my personal engineering notebook for the Internshala VLSI course. I use this file to jot down theoretical concepts, synthesis behaviors I notice in Vivado, and verification results as I build out the modules. 
+This log records the digital-design theory studied so far and connects it to the Verilog examples in this repository. The main idea is **hardware inference**: RTL describes hardware behavior, and synthesis tools transform that description into a circuit for a target device. Different coding styles may describe the same logic; the synthesized result depends on the tool, target, and constraints.
 
-The main goal right now is getting completely comfortable with Gate-Level, Dataflow, Structural, and Behavioral RTL modeling before tackling the larger projects.
+## 1. VLSI and FPGA foundations
 
----
+**VLSI** integrates large numbers of transistors on a chip. Digital design work spans frontend tasks (architecture, RTL, and functional verification) and implementation tasks (mapping, placement, routing, and timing analysis). ASICs are custom fabricated for a product; CPUs execute software on a fixed architecture; FPGAs use programmable logic and routing configured by a bitstream.
 
-## Toolchain & Methodology Notes
+Typical FPGA resources include configurable logic blocks with lookup tables and flip-flops, programmable interconnect and I/O, and dedicated resources such as DSP slices and block RAM. The exact resources depend on the device. Vivado reports can show estimated resource use and power, but results depend on the selected part, design, constraints, and activity assumptions.
 
-### Vivado: Resource and Power Estimation
-* **Synthesis & Utilization:** After running synthesis, checking the "Project Summary" reveals the Resource Utilization percentages (like LUTs and I/O ports). If a design outgrows the current board, you can click the device name to swap to a larger FPGA (e.g., an Artix-7) and resynthesize.
-* **Power Estimation:** Clicking "Report Power" under the Implementation tab allows for adjusting environmental variables (like ambient temperature) to generate a detailed report splitting on-chip power into static and dynamic consumption.
+## 2. Verilog, synthesis, and verification
 
-### Verification & AI Workflow Integration
-* **Prompting for RTL:** When prompting for Verilog design code, provide a structured request that explicitly defines the module name, number of inputs and outputs, bit-widths, modeling style (such as dataflow or continuous assignment), and whether the code must be synthesizable.
-* **Testbench Generation:** I generate base testbenches by pasting the Verilog module into the chat and commanding the AI to write a testbench that covers all possible input combinations and uses the `$monitor` command to print the results. After generating, I copy the final, refined testbench back into the Vivado environment to run the simulation.
-* **Edge-Case Handling:** If exhaustive testing is impossible due to massive input combinations (like multiple 8-bit inputs), I adopt the AI's practical recommendation to use randomized testing with loops.
+### RTL describes hardware
 
----
+- A `wire` is a net driven by a continuous assignment, module output, or primitive. A Verilog `reg` is a procedural variable; it does **not** automatically mean a physical register. A `reg` assigned in a fully specified combinational `always` block can synthesize to combinational logic.
+- `assign` describes continuous net driving. Procedural assignments (`=` and `<=`) appear in `always` or `initial` blocks.
+- Blocking assignment (`=`) updates immediately within the procedural flow. Nonblocking assignment (`<=`) schedules the update for a later event region in the same time step and is the usual choice for clocked sequential logic.
+- Verilog simulation uses `0`, `1`, `X` (unknown or conflicting), and `Z` (high impedance). `X` and `Z` help reveal uninitialized signals, conflicting drivers, and unconnected ports.
+- Bitwise operators such as `&`, `|`, and `^` work across bits; logical operators such as `&&` and `||` produce a Boolean result. `===` and `!==` compare `X` and `Z` exactly and are useful in testbenches. Width and signedness matter in arithmetic expressions.
+- Structural designs instantiate smaller modules. Named port connections are generally easier to review and less error-prone than positional connections.
 
-## Module 2 (Part B): Hardware Data Types & Syntax
+### Combinational completeness
 
-### Nets vs. Procedural Variables
-* **`wire`:** Think of this as an actual physical copper wire. It can't store memory. It has to be continuously driven by something (like an `assign` statement or the output of another module).
-* **`reg`:** This is a procedural variable used inside `always` or `initial` blocks. The tricky part? Just because it's called `reg` doesn't mean it always becomes a hardware register (flip-flop). Depending on how you write the code, Vivado might turn it into a flip-flop, a latch, or just plain combinational logic.
+A combinational process must assign every output on every possible path. An incomplete `if` or `case` can require the output to retain its old value, causing latch inference. Use complete branches or assign defaults, and use `always @*` for Verilog combinational processes. Static `for` loops can be unrolled by synthesis when their bounds and contents are supported; testbench-only constructs such as `forever` clock loops do not describe ordinary finite combinational hardware.
 
-### Loops in Hardware
-* **Synthesizable (`for`):** You can use `for` loops in RTL, but only if the start and end points are fixed numbers. The synthesizer essentially "unrolls" the loop and copy-pastes the hardware gates side-by-side. 
-* **Not Synthesizable (`while`, `forever`):** Dynamic loops usually can't be synthesized into physical hardware because the compiler doesn't know how many gates to build. I only use `forever` loops inside testbenches to generate clock signals.
+### Project and testbench workflow
 
-### Operators
-* **Concatenation `{}`:** Super useful for bundling individual signals into a bus. Example: `assign {cout, sum} = a + b;`
-* **Bitwise vs. Logical:** `&` and `|` map directly to physical AND/OR gates for every bit in a wire. `&&` and `||` just return a simple True/False (1/0), mostly used for `if` conditions.
+Vivado separates design sources from simulation sources. Select the intended top module before synthesis or simulation. Testbenches apply inputs to the DUT, then observe outputs through waveforms or console output. Delays such as `#10` and `$monitor` are simulation constructs, not ordinary synthesized hardware. Small truth tables can be exercised exhaustively; self-checking comparisons using `$error` or `$fatal` are a useful next step beyond visual inspection. Standalone waveform workflows may need VCD dumping and simulator-specific signal-access settings.
 
----
+## 3. Combinational arithmetic: `01_Adders_basics/`
 
-## Module 2 (Part A): Multiplexers (`02_Multiplexers/`)
+A **half adder** adds two one-bit inputs: `sum = a ^ b`, `carry = a & b`. A **full adder** also includes carry-in: `sum = a ^ b ^ cin` and `cout = (a & b) | (cin & (a ^ b))`. The repository explores gate-level, dataflow, behavioral, and structural versions. A structural full adder can be composed from two half adders and a carry-combining OR gate.
 
-**What I built:** 2-to-1 Multiplexers using three different abstractions:
-* **Gate-Level:** Wired raw `not`, `and`, and `or` primitives (`MUX_2x1_gate.v`).
-* **Dataflow:** Used boolean logic equations inside an `always @*` block (`MUX2x1_data.v`).
-* **Behavioral:** Used an `always @*` block with procedural `if-else` routing (`MUX_2x1.v`).
+A **four-bit ripple-carry adder** chains four full adders. Each stage passes its carry to the next more-significant bit. This is straightforward to construct, but the carry path grows with the number of bits. The full result of adding two four-bit unsigned values and a carry-in needs five bits; `{cout, sum}` keeps the overflow bit rather than discarding it.
 
-**Notes on Synthesis:** 
-Using an `if-else` block inside combinational logic works perfectly. Vivado recognizes the pattern and infers a dedicated hardware multiplexer rather than trying to build it out of generic logic gates.
+**Adder artifacts**
 
-**Verification:** 
-I wrote exhaustive automated testbenches for each abstraction (`tb_MUX_2x1.v`, `tb_mux_2x1_gate.v`, `tb_mux2x1_data.v`). Using `$monitor` let me print the truth table directly to the console every time the inputs changed.
+![Full-adder force-clock setup](01_Adders_basics/images/FA_force_clocks.png)
+![Full-adder truth table](01_Adders_basics/images/FA_truth_table.png)
+![Full-adder schematic](01_Adders_basics/images/FA_schematic.png)
+![Full-adder waveform](01_Adders_basics/images/FA_truthtable_waveform.png)
+![Half-adder case schematic](01_Adders_basics/images/HA_case_schematic.png)
+![Half-adder case simulation](01_Adders_basics/images/HA_case_sim.png)
+![Full-adder case schematic](01_Adders_basics/images/fa_case_schematic.png)
+![Full-adder case simulation](01_Adders_basics/images/fa_case_sim.png)
+![Full-adder gate schematic](01_Adders_basics/images/fa_gate_schematic.png)
+![Full-adder gate simulation](01_Adders_basics/images/fa_gate_sim.png)
+![Full-adder if schematic](01_Adders_basics/images/fa_if_schematic.png)
+![Full-adder if simulation](01_Adders_basics/images/fa_if_sim.png)
+![Four-bit ripple-carry adder schematic](01_Adders_basics/images/rca_4bit_schematic.png)
+![Four-bit ripple-carry adder simulation](01_Adders_basics/images/rca_4bit_sim.png)
 
-### Visual Artifacts
+## 4. Multiplexers and routing: `02_Multiplexers/`
 
-*(2x1 MUX Behavioral: Synthesized Schematic & Waveform)*
-![2x1 MUX Schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
-![2x1 MUX Waveform](02_Multiplexers/images/MUX_2x1_SIM.png)
+A **multiplexer** selects one of its data inputs. A 2-to-1 MUX implements `y = (~s & i0) | (s & i1)`. It can be written as a Boolean equation, built from gates, or described behaviorally with `if-else`. A 4-to-1 MUX uses two select bits and can be built from three 2-to-1 MUXes in two stages. MUXes can also implement Boolean functions by using variables as select inputs and deriving each data input from the truth table.
 
-*(2x1 MUX Gate-Level: Synthesized Schematic & Waveform)*
-![2x1 MUX Gate Schematic](02_Multiplexers/images/MUX_2x1_gate_schematic.png)
-![2x1 MUX Gate Waveform](02_Multiplexers/images/MUX_2x1_gate_sim.png)
+**MUX artifacts**
 
-*(2x1 MUX Dataflow: Synthesized Schematic & Waveform)*
-![2x1 MUX Dataflow Schematic](02_Multiplexers/images/MUX2x1_data_schematic.png)
-![2x1 MUX Dataflow Waveform](02_Multiplexers/images/MUX2x1_data_sim.png)
+![Behavioral 2-to-1 MUX schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
+![Behavioral 2-to-1 MUX simulation](02_Multiplexers/images/MUX_2x1_SIM.png)
+![Gate-level 2-to-1 MUX schematic](02_Multiplexers/images/MUX_2x1_gate_schematic.png)
+![Gate-level 2-to-1 MUX simulation](02_Multiplexers/images/MUX_2x1_gate_sim.png)
+![Dataflow 2-to-1 MUX schematic](02_Multiplexers/images/MUX2x1_data_schematic.png)
+![Dataflow 2-to-1 MUX simulation](02_Multiplexers/images/MUX2x1_data_sim.png)
+![Four-to-one MUX schematic](02_Multiplexers/images/mux_4x1_schematic.png)
+![Four-to-one MUX simulation](02_Multiplexers/images/mux_4x1_sim.png)
 
----
+## 5. Demultiplexers, decoders, and encoders: `03_Decoders_Demux/`
 
-## Modules 1 & 3: Combinational Arithmetic (`01_Adders_basics/`)
+A **1-to-4 demultiplexer** routes one input to one of four outputs according to two select bits. A **2-to-4 decoder** converts a two-bit code into a one-hot output; an active-high enable forces all outputs low when disabled. A **3-to-8 decoder** can be composed hierarchically from enabled 2-to-4 decoders. Named port mapping helps avoid wiring mistakes when some outputs are unused.
 
-**What I built:** Half Adders, Full Adders, and a 4-bit Ripple Carry Adder across different abstraction levels.
-* **Gate-Level:** Wired up raw `xor`, `and`, and `or` primitives (`HA_gate.v`, `fa_gate.v`).
-* **Dataflow:** Used arithmetic concatenation and continuous `assign` statements (`FA_data.v`).
-* **Structural:** Built a Full Adder by instantiating two Half Adders (`FA_using_HA.v`), and built a 4-bit RCA by cascading four Full Adders using named port mapping (`rca_4bit.v`).
-* **Behavioral:** Built adders by giving the compiler the truth table via `case` and `if-else` statements (`HA_case.v`, `fa_case.v`, `fa_if.v`). 
+A decoder generates minterms, so a Boolean function expressed as a sum of minterms can be built by OR-ing the corresponding decoder outputs. An **encoder** performs the reverse mapping from one active input to a binary code. A **priority encoder** defines which request wins when multiple inputs are active; this is course theory, while the repository examples focus on decoding and demultiplexing.
 
-**Notes on Synthesis:**
-* **Abstraction doesn't change the waveform:** Whether I manually wired the gates or just wrote a behavioral `case` statement, the simulation waveforms looked exactly the same. The difference is only visible in the RTL Schematics.
-* **The missing `default` danger:** When writing `fa_case.v`, I realized that if a `case` statement fails to assign an output for every possible condition, Vivado infers memory latches to hold the previous state. Adding a `default` fallback (or explicitly defining every single combination) prevents this and keeps the circuit strictly combinational.
+**Decoder and demultiplexer artifacts**
 
-**Verification:**
-I have completely transitioned from manual GUI Force Clocks to automated testbenches. My simulation files (like `tb_fa_case.v`) use `#10` nanosecond delays to step through inputs, generating exhaustive, repeatable truth tables in the console. For larger designs like the 4-bit RCA (`tb_rca_4bit.v`), I used targeted edge-case stimulus (e.g., testing `15 + 15 + 1 = 31`) to verify carry rippling.
+![1-to-4 demultiplexer schematic](03_Decoders_Demux/images/demux_1x4_schematic.png)
+![1-to-4 demultiplexer simulation](03_Decoders_Demux/images/demux_1x4_sim.png)
+![2-to-4 decoder schematic](03_Decoders_Demux/images/dec_2to4_schematic.png)
+![2-to-4 decoder simulation](03_Decoders_Demux/images/dec_2to4_sim.png)
+![3-to-8 decoder schematic](03_Decoders_Demux/images/dec_3to8_schematic.png)
+![3-to-8 decoder simulation](03_Decoders_Demux/images/dec_3to8_sim.png)
+![Decoder-based function schematic](03_Decoders_Demux/images/func_decoder_schematic.png)
+![Decoder-based function simulation](03_Decoders_Demux/images/func_decoder_sim.png)
 
-### Visual Artifacts
+## 6. Gray and binary conversion: `04_Code_Converters/`
 
-*(Manual Force Clock Configuration & Truth Table Reference)*
-![Force Clock Settings](01_Adders_basics/images/FA_force_clocks.png)
-![Truth Table](01_Adders_basics/images/FA_truth_table.png)
+Adjacent Gray-code values differ by one bit, which can reduce ambiguity when a changing value is observed across physical signals with unequal delays. Gray coding is useful in applications such as position sensing and asynchronous FIFO pointer techniques, but it does not replace proper clock-domain-crossing design.
 
-*(Full Adder: Synthesized RTL Schematic & Validated Waveform)*
-![Full Adder Schematic](01_Adders_basics/images/FA_schematic.png)
-![Full Adder Waveform](01_Adders_basics/images/FA_truthtable_waveform.png)
+For binary-to-Gray conversion, the most significant bit is unchanged and each lower Gray bit is the XOR of neighboring binary bits. For four-bit Gray-to-binary conversion:
 
-*(Half Adder via Case Statement: Synthesized LUT/MUX Schematic & Waveform)*
-![Half Adder Case Schematic](01_Adders_basics/images/HA_case_schematic.png)
-![Half Adder Case Waveform](01_Adders_basics/images/HA_case_sim.png)
+- `B[3] = G[3]`
+- `B[2] = G[3] ^ G[2]`
+- `B[1] = G[3] ^ G[2] ^ G[1]`
+- `B[0] = G[3] ^ G[2] ^ G[1] ^ G[0]`
 
-*(Full Adder via Case Statement: Synthesized Schematic & Waveform)*
-![Full Adder Case Schematic](01_Adders_basics/images/fa_case_schematic.png)
-![Full Adder Case Waveform](01_Adders_basics/images/fa_case_sim.png)
+The repository implements Gray-to-binary conversion both with dataflow XOR equations and with a `case` table.
 
-*(Full Adder via Gate Primitives: Synthesized Schematic & Waveform)*
-![Full Adder Gate Schematic](01_Adders_basics/images/fa_gate_schematic.png)
-![Full Adder Gate Waveform](01_Adders_basics/images/fa_gate_sim.png)
+![Gray-to-binary schematic](04_Code_Converters/images/gtob_data_schematic.png)
+![Gray-to-binary simulation](04_Code_Converters/images/gtob_data_sim.png)
 
-*(Full Adder via If-Else Routing: Synthesized Schematic & Waveform)*
-![Full Adder If-Else Schematic](01_Adders_basics/images/fa_if_schematic.png)
-![Full Adder If-Else Waveform](01_Adders_basics/images/fa_if_sim.png)
+## 7. Magnitude comparison: `05_Comparators/`
 
-*(4-bit Ripple Carry Adder: Structural Schematic & Waveform)*
-![4-bit RCA Schematic](01_Adders_basics/images/rca_4bit_schematic.png)
-![4-bit RCA Waveform](01_Adders_basics/images/rca_4bit_sim.png)
+A one-bit comparator produces greater-than, equal, and less-than outputs:
 
-### Module 3-5: Routing, Decoding, and Comparison
-* **Structural Port Mapping:** When building the `dec_3to8` out of `dec_2to4_en` modules, passing signals by position caused compilation errors because the sub-module expected 7 ports but the instructor's template only passed 5. I learned to *always* use explicit named port mapping (e.g., `.E(E), .d0(c)`) and leave unused outputs empty `()`. This ensures safe synthesis.
-* **Function via Decoder:** I implemented a Boolean function (sum of minterms 0, 2, 4) purely by tapping the outputs of a 3-to-8 decoder and passing them through an OR gate. Seeing this synthesize perfectly in Vivado really reinforced how decoders act as universal logic generators.
-* **Case vs. XOR for Code Converters:** I built the Gray-to-Binary converter twice. The `case` statement version is highly readable, but ensuring I included a `default` statement was critical to prevent unintended memory latches. The dataflow version using continuous `^` (XOR) assignments synthesizes to the exact same hardware but is much more compact.
+- `g = a & ~b`
+- `e = a ~^ b`
+- `s = ~a & b`
+
+For wider unsigned values, compare from the most significant bit downward: the first differing bit determines the result, while equality requires every bit pair to match. The repository implements and tests the one-bit comparator; wider comparison is covered as scaling theory. Verilog relational operators can describe wider comparisons, with care for operand widths and signedness.
+
+![One-bit comparator schematic](05_Comparators/images/comp_1bit_schematic.png)
+![One-bit comparator simulation](05_Comparators/images/comp_1bit_sim.png)
+
+## 8. Scope and next steps
+
+The current hands-on designs cover adders, multiplexers, demultiplexing, decoders, Gray-to-binary conversion, and one-bit comparison. Topics such as ASIC physical implementation, encoder design, priority encoding, and wider comparators are included here as theory, not claimed as completed repository implementations.
+
+Next, I plan to add self-checking testbenches, document key simulation and synthesis settings, and compare tool results without assuming a particular RTL style always maps to a particular primitive. For sequential designs, I will also document clocking, reset, and timing assumptions.
