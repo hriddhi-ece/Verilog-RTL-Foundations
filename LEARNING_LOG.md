@@ -6,6 +6,19 @@ The main goal right now is getting completely comfortable with Gate-Level, Dataf
 
 ---
 
+## Toolchain & Methodology Notes
+
+### Vivado: Resource and Power Estimation
+* **Synthesis & Utilization:** After running synthesis, checking the "Project Summary" reveals the Resource Utilization percentages (like LUTs and I/O ports). If a design outgrows the current board, you can click the device name to swap to a larger FPGA (e.g., an Artix-7) and resynthesize.
+* **Power Estimation:** Clicking "Report Power" under the Implementation tab allows for adjusting environmental variables (like ambient temperature) to generate a detailed report splitting on-chip power into static and dynamic consumption.
+
+### Verification & AI Workflow Integration
+* **Prompting for RTL:** When prompting for Verilog design code, provide a structured request that explicitly defines the module name, number of inputs and outputs, bit-widths, modeling style (such as dataflow or continuous assignment), and whether the code must be synthesizable.
+* **Testbench Generation:** I generate base testbenches by pasting the Verilog module into the chat and commanding the AI to write a testbench that covers all possible input combinations and uses the `$monitor` command to print the results. After generating, I copy the final, refined testbench back into the Vivado environment to run the simulation.
+* **Edge-Case Handling:** If exhaustive testing is impossible due to massive input combinations (like multiple 8-bit inputs), I adopt the AI's practical recommendation to use randomized testing with loops.
+
+---
+
 ## Module 2 (Part B): Hardware Data Types & Syntax
 
 ### Nets vs. Procedural Variables
@@ -24,27 +37,39 @@ The main goal right now is getting completely comfortable with Gate-Level, Dataf
 
 ## Module 2 (Part A): Multiplexers (`02_Multiplexers/`)
 
-**What I built:** A 2-to-1 Multiplexer (`MUX_2x1.v`).
-**Style:** Behavioral modeling using an `always @*` block and `if-else` routing.
+**What I built:** 2-to-1 Multiplexers using three different abstractions:
+* **Gate-Level:** Wired raw `not`, `and`, and `or` primitives (`MUX_2x1_gate.v`).
+* **Dataflow:** Used boolean logic equations inside an `always @*` block (`MUX2x1_data.v`).
+* **Behavioral:** Used an `always @*` block with procedural `if-else` routing (`MUX_2x1.v`).
 
 **Notes on Synthesis:** 
 Using an `if-else` block inside combinational logic works perfectly. Vivado recognizes the pattern and infers a dedicated hardware multiplexer rather than trying to build it out of generic logic gates.
 
 **Verification:** 
-I started by testing the select-line using manual GUI Force Clocks, but quickly moved to writing an automated testbench (`tb_MUX_2x1.v`). Using `$monitor` let me print the truth table directly to the console every time the inputs changed.
+I wrote exhaustive automated testbenches for each abstraction (`tb_MUX_2x1.v`, `tb_mux_2x1_gate.v`, `tb_mux2x1_data.v`). Using `$monitor` let me print the truth table directly to the console every time the inputs changed.
 
-*(2x1 MUX RTL Schematic & Simulation Waveform)*
+### Visual Artifacts
+
+*(2x1 MUX Behavioral: Synthesized Schematic & Waveform)*
 ![2x1 MUX Schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
 ![2x1 MUX Waveform](02_Multiplexers/images/MUX_2x1_SIM.png)
+
+*(2x1 MUX Gate-Level: Synthesized Schematic & Waveform)*
+![2x1 MUX Gate Schematic](02_Multiplexers/images/MUX_2x1_gate_schematic.png)
+![2x1 MUX Gate Waveform](02_Multiplexers/images/MUX_2x1_gate_sim.png)
+
+*(2x1 MUX Dataflow: Synthesized Schematic & Waveform)*
+![2x1 MUX Dataflow Schematic](02_Multiplexers/images/MUX2x1_data_schematic.png)
+![2x1 MUX Dataflow Waveform](02_Multiplexers/images/MUX2x1_data_sim.png)
 
 ---
 
 ## Modules 1 & 3: Combinational Arithmetic (`01_Adders_basics/`)
 
-**What I built:** Half Adders and Full Adders using four completely different abstraction levels to see how the compiler handles them.
+**What I built:** Half Adders, Full Adders, and a 4-bit Ripple Carry Adder across different abstraction levels.
 * **Gate-Level:** Wired up raw `xor`, `and`, and `or` primitives (`HA_gate.v`, `fa_gate.v`).
 * **Dataflow:** Used arithmetic concatenation and continuous `assign` statements (`FA_data.v`).
-* **Structural:** Built a Full Adder by instantiating two Half Adders and wiring their internal nets together (`FA_using_HA.v`).
+* **Structural:** Built a Full Adder by instantiating two Half Adders (`FA_using_HA.v`), and built a 4-bit RCA by cascading four Full Adders using named port mapping (`rca_4bit.v`).
 * **Behavioral:** Built adders by giving the compiler the truth table via `case` and `if-else` statements (`HA_case.v`, `fa_case.v`, `fa_if.v`). 
 
 **Notes on Synthesis:**
@@ -52,7 +77,7 @@ I started by testing the select-line using manual GUI Force Clocks, but quickly 
 * **The missing `default` danger:** When writing `fa_case.v`, I realized that if you leave out the `default` fallback in a `case` statement, Vivado panics and injects memory latches to hold the previous state. I had to ensure every possible input combination was accounted for to keep the circuit strictly combinational.
 
 **Verification:**
-I have completely transitioned from manual GUI Force Clocks to automated testbenches. My simulation files (like `tb_fa_case.v`) use `#10` nanosecond delays to step through inputs, generating exhaustive, repeatable truth tables in the console.
+I have completely transitioned from manual GUI Force Clocks to automated testbenches. My simulation files (like `tb_fa_case.v`) use `#10` nanosecond delays to step through inputs, generating exhaustive, repeatable truth tables in the console. For larger designs like the 4-bit RCA (`tb_rca_4bit.v`), I used targeted edge-case stimulus (e.g., testing `15 + 15 + 1 = 31`) to verify carry rippling.
 
 ### Visual Artifacts
 
@@ -79,3 +104,7 @@ I have completely transitioned from manual GUI Force Clocks to automated testben
 *(Full Adder via If-Else Routing: Synthesized Schematic & Waveform)*
 ![Full Adder If-Else Schematic](01_Adders_basics/images/fa_if_schematic.png)
 ![Full Adder If-Else Waveform](01_Adders_basics/images/fa_if_sim.png)
+
+*(4-bit Ripple Carry Adder: Structural Schematic & Waveform)*
+![4-bit RCA Schematic](01_Adders_basics/images/rca_4bit_schematic.png)
+![4-bit RCA Waveform](01_Adders_basics/images/rca_4bit_sim.png)

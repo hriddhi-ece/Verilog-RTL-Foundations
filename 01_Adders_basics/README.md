@@ -1,9 +1,28 @@
 # Combinational Arithmetic (Adders)
 
-This folder contains basic digital arithmetic circuits (Half Adders and Full Adders) implemented across multiple Verilog modeling abstractions:
-* **Gate-Level:** Explicit primitive wiring (`HA_gate.v`, `fa_gate.v`)
-* **Dataflow:** Continuous assignments and concatenation (`FA_data.v`, `half_adder_data.v`)
-* **Structural:** Hierarchical module instantiation (`FA_using_HA.v`)
-* **Behavioral:** Procedural logic using `case` and `if-else` (`HA_case.v`, `fa_case.v`, `fa_if.v`)
+This folder contains digital arithmetic circuits. Every design file is paired with an automated testbench (`tb_*.v`) for verification.
 
-Every design file is paired with an automated testbench (`tb_*.v`) for exhaustive truth table verification.
+### 1. Half Adders
+* **Gate-Level:** `HA_gate.v`
+* **Dataflow:** `half_adder_data.v`, `half_adder_data1.v`
+* **Behavioral:** `HA_case.v`
+
+### 2. Full Adders
+* **Gate-Level:** `fa_gate.v`
+* **Dataflow:** `FA_data.v`
+* **Structural:** `FA_using_HA.v`
+* **Behavioral:** `fa_case.v`, `fa_if.v`
+
+### 3. Multi-Bit Adders
+* **4-bit Ripple Carry Adder (Structural):** `rca_4bit.v`
+
+### Quick Port Reference
+* **Half Adders:** `input a, b` | `output sum, carry`
+* **Full Adders:** `input a, b, cin` | `output sum, cout`
+* **4-bit RCA:** `input [3:0] a, b`, `input c` | `output [3:0] sum`, `output cout`
+
+### How to Simulate (Vivado)
+This repository is built around AMD Vivado. To run any testbench:
+1. Add the design `.v` file and its matching `tb_*.v` file to your Vivado project.
+2. Right-click the testbench in the Hierarchy window and select **Set as Top**.
+3. Click **Run Simulation** -> **Run Behavioral Simulation**.
