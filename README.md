@@ -1,35 +1,38 @@
 # Verilog RTL Foundations
 
-**Status:** Active Learning & Fresher Portfolio 
-**Author:** Hriddhi Bhattacharyya (ECE, Netaji Subhash Engineering College)
-**Contact:** hriddhibhattacharyya239@gmail.com
+**Status:** Active learning and portfolio project  
+**Author:** Hriddhi Bhattacharyya — ECE, Netaji Subhash Engineering College
 
-This repository is my personal engineering workspace for mastering Verilog HDL and RTL design. Rather than uploading a massive, unverified ASIC project, I built this to document a strict, fundamental progression from digital logic theory to synthesizable hardware using AMD/Xilinx Vivado.
+This repository is a hands-on introduction to Verilog HDL and RTL design. It focuses on small combinational circuits and demonstrates how to describe hardware using behavioral, dataflow, gate-level, and structural modeling styles.
 
-It is designed to demonstrate "hardware thinking"—writing Verilog not as sequential software, but as a description of physical gates, LUTs, and multiplexers.
+The goal is to build hardware intuition: Verilog RTL describes logic that can be synthesized into gates, lookup tables, and multiplexers—not a sequence of software instructions.
 
-### Visual Preview
-*Full Adder Schematic synthesized directly from behavioral RTL in Vivado.*
-![Full Adder Schematic](01_Adders_basics/images/FA_schematic.png)
+## Visual preview
 
-## Repository Structure
+*Full-adder schematic generated in Vivado from the RTL.*
 
-* **[`01_Adders_basics/`](./01_Adders_basics/)**: Half Adders, Full Adders, and a 4-bit Ripple Carry Adder.
-* **[`02_Multiplexers/`](./02_Multiplexers/)**: 2-to-1 and 4-to-1 MUX implementations comparing behavioral, dataflow, and gate-level styles.
-* **[`03_Decoders_Demux/`](./03_Decoders_Demux/)**: 1x4 Demux, 2x4 Decoders, and a structural 3x8 Decoder. Demonstrates using decoders for Boolean function implementation.
-* **[`04_Code_Converters/`](./04_Code_Converters/)**: Gray-to-Binary converters built with procedural `case` statements and dataflow XOR logic.
-* **[`05_Comparators/`](./05_Comparators/)**: 1-bit Magnitude Comparator.
-* **[`LEARNING_LOG.md`](./LEARNING_LOG.md)**: A continuous log of synthesis observations, hardware inference theory, and bug-fixing notes.
+![Full-adder schematic](01_Adders_basics/images/FA_schematic.png)
 
-### Verification Approach
+## Repository structure
 
-I verify logic functionality through a progression of methods:
-1. **Visual Validation:** Initial truth-table checks using Vivado's GUI Force Clocks.
-2. **Automated Testbenches:** Custom `tb_*.v` files utilizing `$monitor` to print exhaustive truth tables directly to the console.
-3. **Next Steps:** Upgrading testbenches to use self-checking `PASS/FAIL` assertions for better regression testing.
+- [`01_Adders_basics/`](./01_Adders_basics/) — Half adders, full adders, and a 4-bit ripple-carry adder.
+- [`02_Multiplexers/`](./02_Multiplexers/) — 2-to-1 and 4-to-1 multiplexers in behavioral, dataflow, gate-level, and structural styles.
+- [`03_Decoders_Demux/`](./03_Decoders_Demux/) — A 1-to-4 demultiplexer, 2-to-4 decoders, a structural 3-to-8 decoder, and a decoder-based Boolean function.
+- [`04_Code_Converters/`](./04_Code_Converters/) — Gray-to-binary conversion using `case` and dataflow XOR logic.
+- [`05_Comparators/`](./05_Comparators/) — A one-bit magnitude comparator.
+- [`LEARNING_LOG.md`](./LEARNING_LOG.md) — Explanations of the RTL concepts and figures demonstrated by the examples.
 
-### How to Run Locally
+## Verification
 
-1. Clone the repository:
-   ```bash
-   git clone [https://github.com/hriddhi-ece/Verilog-RTL-Foundations.git](https://github.com/hriddhi-ece/Verilog-RTL-Foundations.git)
+The included testbenches apply input patterns and use `$monitor` to display signal values. These outputs are useful for visual truth-table inspection; they are not self-checking assertions. Self-checking `PASS`/`FAIL` tests and automated regression are potential next steps.
+
+## How to run locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/hriddhi-ece/Verilog-RTL-Foundations.git
+cd Verilog-RTL-Foundations
+```
+
+The project examples are organized for Vivado behavioral simulation. Add a design file and its corresponding `tb_*.v` testbench as simulation sources, set the testbench as the simulation top, and run **Run Behavioral Simulation**. For structural designs, include the dependent module files as well.
