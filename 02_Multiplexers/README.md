@@ -10,7 +10,8 @@ This folder contains multiplexer circuits designed across multiple Verilog model
 *(New circuit categories like 4-to-1 or 8-to-1 MUX will be appended below)*
 
 ### Quick Port Reference
-* **2-to-1 MUX:** `input i0, i1, s` | `output y`
+* **2-to-1 MUX (Behavioral):** `input I0, I1, S` | `output reg Y`
+* **2-to-1 MUX (Gate/Dataflow):** `input i0, i1, s` | `output y`
 
 ### How to Simulate (Vivado)
 This repository is built around AMD Vivado. To run any testbench:

@@ -74,7 +74,7 @@ I wrote exhaustive automated testbenches for each abstraction (`tb_MUX_2x1.v`, `
 
 **Notes on Synthesis:**
 * **Abstraction doesn't change the waveform:** Whether I manually wired the gates or just wrote a behavioral `case` statement, the simulation waveforms looked exactly the same. The difference is only visible in the RTL Schematics.
-* **The missing `default` danger:** When writing `fa_case.v`, I realized that if you leave out the `default` fallback in a `case` statement, Vivado panics and injects memory latches to hold the previous state. I had to ensure every possible input combination was accounted for to keep the circuit strictly combinational.
+* **The missing `default` danger:** When writing `fa_case.v`, I realized that if a `case` statement fails to assign an output for every possible condition, Vivado infers memory latches to hold the previous state. Adding a `default` fallback (or explicitly defining every single combination) prevents this and keeps the circuit strictly combinational.
 
 **Verification:**
 I have completely transitioned from manual GUI Force Clocks to automated testbenches. My simulation files (like `tb_fa_case.v`) use `#10` nanosecond delays to step through inputs, generating exhaustive, repeatable truth tables in the console. For larger designs like the 4-bit RCA (`tb_rca_4bit.v`), I used targeted edge-case stimulus (e.g., testing `15 + 15 + 1 = 31`) to verify carry rippling.
