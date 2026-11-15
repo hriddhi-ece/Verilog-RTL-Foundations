@@ -1,29 +1,31 @@
 # Verilog RTL Foundations
 
-*Current Status: Active (Documenting core HDL theory; Practical hardware assignments scheduled for execution upon course completion)*
+**Current Status:** Active (Currently working through core HDL theory. Practical assignments like the 8-bit ALU are scheduled for later).
 
-A hardware design portfolio documenting my progression through the Internshala VLSI course. All digital circuits are manually coded, synthesized, and verified using Verilog HDL and AMD/Xilinx Vivado.
+I put this repository together to document my progress through the Internshala VLSI course. Instead of just dumping code, I'm using this space to track how different Verilog coding styles actually translate into synthesized hardware in AMD Vivado. 
 
-### Visual Preview: Full Adder RTL Synthesis
-*Generated directly from Vivado RTL Analysis.*
+All the digital circuits here are manually coded, synthesized, and verified by me.
+
+### A Quick Look: RTL Synthesis
+Here is an example of a Full Adder synthesized directly from my RTL code:
+
 ![Full Adder Schematic](01_Adders_basics/images/FA_schematic.png)
-*(See `LEARNING_LOG.md` for complete simulation waveforms and case logic schematics)*
+*(You can find the rest of the simulation waveforms and schematics in my learning log).*
 
-### Key Capabilities
-* **Multi-Paradigm Modeling:** Implementations of digital logic using Gate-Level, Dataflow, Structural, and Behavioral modeling techniques.
-* **Combinational Arithmetic (`01_Adders_basics/`):** Custom Half Adders and Full Adders built from fundamental gates up to procedural `case` statements.
-* **Multiplexer Architectures (`02_Multiplexers/`):** 2-to-1 Multiplexers designed using conditional routing (`if-else`).
-* **Testbench-Free Verification:** Automated truth table validation using Vivado's `Force Clock` GUI methodology to cycle through all binary states.
+### What's Inside
+* **Combinational Arithmetic (`01_Adders_basics/`):** A collection of Half and Full Adders. I built these multiple ways—starting from raw gate primitives, moving to continuous assignments, and finally using procedural `case` and `if-else` blocks to see how Vivado handles them.
+* **Multiplexers (`02_Multiplexers/`):** 2-to-1 MUX designs using conditional routing.
+* **Automated Testbenches:** I moved away from manually clicking through Vivado's GUI Force Clocks and started writing exhaustively automated Verilog testbenches (using `$monitor`) to validate truth tables directly in the console.
 
-### Core Engineering Takeaways
-* **Hardware vs. Software Syntax:** Procedural `case` statements in Verilog do not just execute sequential code; they instruct the Vivado synthesizer to infer physical Look-Up Tables (LUTs) and Multiplexers.
-* **Avoiding Combinational Latches:** Omitting a `default` fallback in a combinational `case` block causes the synthesizer to inject unintentional memory latches, which violates timing closures. 
-* **Signal Types & Assignments:** Driving `wire` nets via continuous assignments outside procedural blocks versus driving `reg` data types inside clocked/triggered `always` blocks.
+### Key Things I've Learned So Far
+* **Verilog isn't Software:** Writing a `case` statement in Verilog doesn't just run code in sequence; it literally tells the Vivado synthesizer to wire up physical Look-Up Tables (LUTs) and multiplexers on the FPGA.
+* **The Latch Trap:** If you forget to include a `default` condition in a combinational `case` block, the synthesizer will try to hold the previous value by injecting unintentional memory latches. This ruins combinational timing.
+* **Nets vs. Variables:** Figuring out exactly when to use a `wire` (driven continuously outside a block) versus a `reg` (driven inside a triggered `always` block) has been the biggest mental shift.
 
-### Quick Setup
-1. Clone this repository: `git clone https://github.com/hriddhi-ece/Verilog-RTL-Foundations.git`
-2. Open the `.v` source files in AMD Vivado.
-3. Run RTL Analysis to generate schematics, or launch Simulation and apply Force Clocks to input nodes to verify waveforms.
+### How to Run This Code
+1. Clone the repo: `git clone https://github.com/hriddhi-ece/Verilog-RTL-Foundations.git`
+2. Open any `.v` source file and its matching `tb_` testbench file in AMD Vivado.
+3. Run **RTL Analysis** to see the hardware schematic, or launch **Simulation** to watch the testbench automatically print the truth table.
 
 ---
-**Detailed Module Notes:** For a chronological breakdown of my methodology, theoretical notes, and all simulation artifacts, see my [LEARNING_LOG.md](./LEARNING_LOG.md).
+**Detailed Notes:** If you want to see my actual lab notes, synthesis observations, and all the waveform screenshots, check out my [LEARNING_LOG.md](./LEARNING_LOG.md).

@@ -1,45 +1,37 @@
-# VLSI Learning Log & Engineering Methodology
+# VLSI Learning Log & Lab Notes
 
-**Purpose:** This document serves as a technical engineering methodology log tracking my progression through the Internshala VLSI coursework. It captures design implementations, synthesis insights, verification strategies, and core RTL coding principles.
+This is my personal engineering notebook for the Internshala VLSI course. I use this file to jot down theoretical concepts, synthesis behaviors I notice in Vivado, and verification results as I build out the modules. 
 
-**Course Objective:** To transition from theoretical digital logic to practical, synthesizable hardware design using Verilog HDL and AMD/Xilinx Vivado.
-
-**Learning Outcomes:** 
-* Mastery of Gate-Level, Dataflow, Structural, and Behavioral RTL modeling.
-* Understanding the physical synthesis impact of procedural constructs and assignments.
-* Testbench-free waveform verification using continuous GUI stimulus.
-
-*(Note: Comprehensive practical assignments, such as the 8-bit ALU and FSM Pattern Detectors, are batched for execution upon completion of core theoretical modules.)*
+The main goal right now is getting completely comfortable with Gate-Level, Dataflow, Structural, and Behavioral RTL modeling before tackling the larger projects.
 
 ---
 
-## Module 02 (Part B): Core HDL Concepts & Data Types
+## Module 2 (Part B): Hardware Data Types & Syntax
 
-### Theory: Hardware Data Types
-* **`wire` (Nets):** A net type used for physical connections and combinational outputs. It must be driven continuously (e.g., via `assign` or module instantiation) and does not inherently store values.
-* **`reg` (Procedural Variables):** A procedural variable driven from within a procedural block (`initial` or `always`). Depending on the context and coding style, a `reg` may synthesize to a physical flip-flop, a latch, or purely combinational logic.
+### Nets vs. Procedural Variables
+* **`wire`:** Think of this as an actual physical copper wire. It can't store memory. It has to be continuously driven by something (like an `assign` statement or the output of another module).
+* **`reg`:** This is a procedural variable used inside `always` or `initial` blocks. The tricky part? Just because it's called `reg` doesn't mean it always becomes a hardware register (flip-flop). Depending on how you write the code, Vivado might turn it into a flip-flop, a latch, or just plain combinational logic.
 
-### Theory: Procedural Loops in Synthesis
-* **Synthesizable Loops (`for`):** Can be synthesized into hardware provided the loop bounds are static, allowing the synthesizer to unroll the loop and generate parallel physical gates.
-* **Non-Synthesizable Loops (`while`, `forever`):** Dynamic `while` loops are generally not synthesizable for RTL because the loop iteration count is not static. `forever` loops are restricted entirely to testbench stimulus generation.
+### Loops in Hardware
+* **Synthesizable (`for`):** You can use `for` loops in RTL, but only if the start and end points are fixed numbers. The synthesizer essentially "unrolls" the loop and copy-pastes the hardware gates side-by-side. 
+* **Not Synthesizable (`while`, `forever`):** Dynamic loops usually can't be synthesized into physical hardware because the compiler doesn't know how many gates to build. I only use `forever` loops inside testbenches to generate clock signals.
 
-### Theory: Verilog Operators
-* **Concatenation `{}`:** Combines scalar or vector nets into a wider bus (e.g., `assign {cout, sum} = a + b;`).
-* **Bitwise vs. Logical:** Bitwise operators (`&`, `|`, `^`) map directly to parallel hardware gates for each bit in a bus. Logical operators (`&&`, `||`, `!`) evaluate to a single scalar boolean (1/0) for conditional routing.
+### Operators
+* **Concatenation `{}`:** Super useful for bundling individual signals into a bus. Example: `assign {cout, sum} = a + b;`
+* **Bitwise vs. Logical:** `&` and `|` map directly to physical AND/OR gates for every bit in a wire. `&&` and `||` just return a simple True/False (1/0), mostly used for `if` conditions.
 
 ---
 
-## Module 02 (Part A): Multiplexer Architectures (`02_Multiplexers/`)
+## Module 2 (Part A): Multiplexers (`02_Multiplexers/`)
 
-### Concept & Design Approach
-* **Implementation:** 2-to-1 Multiplexer (`MUX_2x1.v`).
-* **Design Style:** Behavioral Modeling. Utilized procedural `always @*` blocks and `if-else` conditional routing.
+**What I built:** A 2-to-1 Multiplexer (`MUX_2x1.v`).
+**Style:** Behavioral modeling using an `always @*` block and `if-else` routing.
 
-### Synthesis Insight
-The use of `if-else` inside a combinational `always` block successfully instructs the Vivado synthesizer to infer a dedicated hardware multiplexer rather than generic logic gates.
+**Notes on Synthesis:** 
+Using an `if-else` block inside combinational logic works perfectly. Vivado recognizes the pattern and infers a dedicated hardware multiplexer rather than trying to build it out of generic logic gates.
 
-### Verification Method
-Select-line verification was executed using cascaded clocks. The select line (S) was assigned a 100ns period to validate the dynamic routing of the slower data channels (I0 at 400ns, I1 at 200ns) to the output net.
+**Verification:** 
+I started by testing the select-line using manual GUI Force Clocks, but quickly moved to writing an automated testbench (`tb_MUX_2x1.v`). Using `$monitor` let me print the truth table directly to the console every time the inputs changed.
 
 *(2x1 MUX RTL Schematic & Simulation Waveform)*
 ![2x1 MUX Schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
@@ -47,20 +39,22 @@ Select-line verification was executed using cascaded clocks. The select line (S)
 
 ---
 
-## Module 01: Combinational Arithmetic (`01_Adders_basics/`)
+## Modules 1 & 3: Combinational Arithmetic (`01_Adders_basics/`)
 
-### Concept & Design Approach
-* **Gate-Level:** Half Adder (`HA_gate.v`) wired using explicit `xor` and `and` primitives.
-* **Dataflow:** Half Adder built using arithmetic concatenation (`half_adder_data.v`) and bitwise operators (`half_adder_data1.v`). Full Adder (`FA_data.v`) built via continuous `assign` statements.
-* **Structural:** Full Adder (`FA_using_HA.v`) constructed by instantiating sub-modules (`HA_gate.v`) and hierarchically mapping internal nets.
-* **Behavioral:** Half Adder (`HA_case.v`) implemented via procedural `case` statements.
+**What I built:** Half Adders and Full Adders using four completely different abstraction levels to see how the compiler handles them.
+* **Gate-Level:** Wired up raw `xor`, `and`, and `or` primitives (`HA_gate.v`, `fa_gate.v`).
+* **Dataflow:** Used arithmetic concatenation and continuous `assign` statements (`FA_data.v`).
+* **Structural:** Built a Full Adder by instantiating two Half Adders and wiring their internal nets together (`FA_using_HA.v`).
+* **Behavioral:** Built adders by giving the compiler the truth table via `case` and `if-else` statements (`HA_case.v`, `fa_case.v`, `fa_if.v`). 
 
-### Synthesis Insight
-* Behavioral modeling using `case` statements allows the synthesizer to efficiently infer LUTs (Look-Up Tables) from truth table definitions.
-* Omitting a `default` fallback in a combinational `case` block causes the synthesizer to inject unintentional memory latches, violating strict combinational timing closures.
+**Notes on Synthesis:**
+* **Abstraction doesn't change the waveform:** Whether I manually wired the gates or just wrote a behavioral `case` statement, the simulation waveforms looked exactly the same. The difference is only visible in the RTL Schematics.
+* **The missing `default` danger:** When writing `fa_case.v`, I realized that if you leave out the `default` fallback in a `case` statement, Vivado panics and injects memory latches to hold the previous state. I had to ensure every possible input combination was accounted for to keep the circuit strictly combinational.
 
-### Verification Method
-Verification was performed via automated truth table validation utilizing Vivado's `Force Clock` GUI methodology. By assigning cascading clock periods (400ns, 200ns, 100ns) to input ports, the simulator cycled through all binary states.
+**Verification:**
+I have completely transitioned from manual GUI Force Clocks to automated testbenches. My simulation files (like `tb_fa_case.v`) use `#10` nanosecond delays to step through inputs, generating exhaustive, repeatable truth tables in the console.
+
+### Visual Artifacts
 
 *(Manual Force Clock Configuration & Truth Table Reference)*
 ![Force Clock Settings](01_Adders_basics/images/FA_force_clocks.png)
@@ -73,3 +67,15 @@ Verification was performed via automated truth table validation utilizing Vivado
 *(Half Adder via Case Statement: Synthesized LUT/MUX Schematic & Waveform)*
 ![Half Adder Case Schematic](01_Adders_basics/images/HA_case_schematic.png)
 ![Half Adder Case Waveform](01_Adders_basics/images/HA_case_sim.png)
+
+*(Full Adder via Case Statement: Synthesized Schematic & Waveform)*
+![Full Adder Case Schematic](01_Adders_basics/images/fa_case_schematic.png)
+![Full Adder Case Waveform](01_Adders_basics/images/fa_case_sim.png)
+
+*(Full Adder via Gate Primitives: Synthesized Schematic & Waveform)*
+![Full Adder Gate Schematic](01_Adders_basics/images/fa_gate_schematic.png)
+![Full Adder Gate Waveform](01_Adders_basics/images/fa_gate_sim.png)
+
+*(Full Adder via If-Else Routing: Synthesized Schematic & Waveform)*
+![Full Adder If-Else Schematic](01_Adders_basics/images/fa_if_schematic.png)
+![Full Adder If-Else Waveform](01_Adders_basics/images/fa_if_sim.png)
