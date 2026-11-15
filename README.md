@@ -12,13 +12,14 @@ It is designed to demonstrate "hardware thinking"—writing Verilog not as seque
 *Full Adder Schematic synthesized directly from behavioral RTL in Vivado.*
 ![Full Adder Schematic](01_Adders_basics/images/FA_schematic.png)
 
-### Repository Structure
+## Repository Structure
 
-*(Course modules are appended below as they are completed)*
-
-* **[`01_Adders_basics/`](./01_Adders_basics/)**: Half Adders, Full Adders, and a 4-bit RCA built across Gate-Level, Dataflow, Structural, and Behavioral abstractions.
-* **[`02_Multiplexers/`](./02_Multiplexers/)**: 2-to-1 MUX designs demonstrating Gate-Level, Dataflow, and conditional `if-else` Behavioral routing.
-* **[`LEARNING_LOG.md`](./LEARNING_LOG.md)**: My detailed lab notebook. Read this for my notes on hardware data types, synthesis observations, and full waveform screenshots.
+* **[`01_Adders_basics/`](./01_Adders_basics/)**: Half Adders, Full Adders, and a 4-bit Ripple Carry Adder.
+* **[`02_Multiplexers/`](./02_Multiplexers/)**: 2-to-1 and 4-to-1 MUX implementations comparing behavioral, dataflow, and gate-level styles.
+* **[`03_Decoders_Demux/`](./03_Decoders_Demux/)**: 1x4 Demux, 2x4 Decoders, and a structural 3x8 Decoder. Demonstrates using decoders for Boolean function implementation.
+* **[`04_Code_Converters/`](./04_Code_Converters/)**: Gray-to-Binary converters built with procedural `case` statements and dataflow XOR logic.
+* **[`05_Comparators/`](./05_Comparators/)**: 1-bit Magnitude Comparator.
+* **[`LEARNING_LOG.md`](./LEARNING_LOG.md)**: A continuous log of synthesis observations, hardware inference theory, and bug-fixing notes.
 
 ### Verification Approach
 

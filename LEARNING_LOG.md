@@ -108,3 +108,8 @@ I have completely transitioned from manual GUI Force Clocks to automated testben
 *(4-bit Ripple Carry Adder: Structural Schematic & Waveform)*
 ![4-bit RCA Schematic](01_Adders_basics/images/rca_4bit_schematic.png)
 ![4-bit RCA Waveform](01_Adders_basics/images/rca_4bit_sim.png)
+
+### Module 3-5: Routing, Decoding, and Comparison
+* **Structural Port Mapping:** When building the `dec_3to8` out of `dec_2to4_en` modules, passing signals by position caused compilation errors because the sub-module expected 7 ports but the instructor's template only passed 5. I learned to *always* use explicit named port mapping (e.g., `.E(E), .d0(c)`) and leave unused outputs empty `()`. This ensures safe synthesis.
+* **Function via Decoder:** I implemented a Boolean function (sum of minterms 0, 2, 4) purely by tapping the outputs of a 3-to-8 decoder and passing them through an OR gate. Seeing this synthesize perfectly in Vivado really reinforced how decoders act as universal logic generators.
+* **Case vs. XOR for Code Converters:** I built the Gray-to-Binary converter twice. The `case` statement version is highly readable, but ensuring I included a `default` statement was critical to prevent unintended memory latches. The dataflow version using continuous `^` (XOR) assignments synthesizes to the exact same hardware but is much more compact.
