@@ -1,276 +1,489 @@
 # Verilog RTL Learning Log
 
-This log connects the circuits in this repository to the RTL concepts they demonstrate. The examples are small combinational designs: their outputs depend on the current inputs, with no clocked state.
+This log connects the circuits in this repository to the RTL concepts they demonstrate. It starts with combinational logic, where outputs depend only on current inputs, and moves into sequential logic, where clocked state preserves information across time. The final section collects practical debugging and synthesizable RTL guidelines.
 
 ## Table of Contents
+
 1. [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
 2. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
 3. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
 4. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
 5. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
 6. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
-7. [Scope and next work](#scope-and-next-work)
+7. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential-logic_basics)
+8. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
+9. [Scope and next work](#scope-and-next-work)
+
+---
 
 ## VLSI, FPGA, and RTL
 
-VLSI design covers the path from defining a circuit's behavior to implementing and checking it. In this repository, the focus is on RTL and basic simulation. An FPGA implements logic using configurable resources, while the RTL description defines the intended logic behavior before synthesis.
+VLSI design spans the path from defining a circuit's behavior to implementing and verifying it. In this repository, the focus is on Register Transfer Level (RTL) modeling and behavioral simulation. An FPGA implements logic using configurable hardware resources, while RTL describes the intended data flow and state behavior before synthesis maps it to gates and flip-flops.
 
-Verilog describes hardware behavior, not a sequence of software instructions:
+Verilog models concurrent hardware behavior rather than a sequence of software instructions:
 
-- A `wire` is a net driven by a continuous assignment, a module output, or a primitive. A Verilog `reg` is a procedural variable; it does not by itself imply a hardware register. For example, `output` ports are often nets, while variables assigned inside `always` blocks are procedural state.
-- `assign` continuously drives a net. Procedural assignments (`=` or `<=`) are used inside `always` or `initial` blocks.
-- Blocking assignment (`=`) takes effect immediately in procedural order. Nonblocking assignment (`<=`) schedules an update for the end of the current simulation time step and is the usual choice for synchronous hardware descriptions.
-- Simulation uses `0`, `1`, `X` (unknown or conflicting), and `Z` (high impedance). Unknown values can expose uninitialized inputs or incomplete stimulus. `Z` is mainly useful for modeling tri-state behavior.
-- Bitwise operators (`&`, `|`, `^`) operate bit by bit; logical operators (`&&`, `||`) produce a Boolean result. Case equality (`===`, `!==`) compares `X` and `Z` explicitly, which can be useful in testbenches and debugging.
-- Structural RTL connects instances of smaller modules. Named port connections, used in designs such as `rca_4bit.v` and `mux_4x1.v`, make those connections easier to inspect.
+- **`wire` vs. `reg`:** A `wire` is a net driven by a continuous assignment (`assign`), a module output, or a primitive gate. A `reg` is a procedural variable; declaring a signal as `reg` does not by itself imply a hardware flip-flop. An `output reg` assigned inside an edge-triggered `always` block models clocked storage, whereas an `output reg` assigned across all paths in an `always @*` block models purely combinational logic. Both continuous `assign` statements and `always @*` procedural blocks are valid ways to express combinational and dataflow behavior.
+- **Continuous vs. procedural assignments:** `assign` continuously drives a net whenever its right-hand side changes. Procedural assignments (`=` or `<=`) live inside `always` or `initial` blocks.
+- **Blocking (`=`) vs. nonblocking (`<=`):** Blocking assignment (`=`) updates immediately in procedural order and suits combinational calculations. Nonblocking assignment (`<=`) schedules updates for the end of the current simulation time step and is the standard choice for sequential clocked logic to avoid race conditions.
+- **Four-state simulation values:** Simulation uses `0`, `1`, `X` (unknown or conflicting drivers), and `Z` (high impedance). Unexpected `X` values often point to uninitialized registers or incomplete testbench stimulus, while `Z` is mainly used for modeling tri-state buses.
+- **Operators:** Bitwise operators (`&`, `|`, `^`) operate bit by bit, whereas logical operators (`&&`, `||`) evaluate to a single Boolean result. Case equality (`===`, `!==`) compares `X` and `Z` explicitly, which is helpful in testbenches and debugging.
+- **Structural RTL:** Larger modules are built by instantiating smaller ones. Using explicit named port mapping (for example, `.E(E)`) makes module connections clearer and reduces wiring mistakes compared to positional mapping.
 
-### Combinational logic and checking
+### Combinational logic and verification workflow
 
-Every output in a combinational process must be assigned on every path. If an `if` or `case` omits an assignment, the output must retain its old value and a latch may be inferred. `MUX_2x1.v` assigns a result in all branches, so it remains purely combinational.
+In a combinational `always @*` block, every output should be assigned along every execution path. If an `if` or `case` branch omits an assignment, the signal must retain its previous value, which can cause synthesis tools to infer an unintended latch. Complete branch coverage or a `default` assignment helps keep the logic purely combinational.
 
-The `tb_*.v` files apply input patterns and use `$monitor` to print signal changes. A printed truth table is useful for visual inspection, but it does not automatically check correctness. A self-checking testbench compares expected results to actual ones, which makes simulation verification more reliable.
+The `tb_*.v` testbenches in this repository use **automated stimulus generation** and **print-based verification** via `$monitor` to log signal changes alongside waveform inspection. While printed truth tables and waveforms make visual inspection straightforward, they do not automatically flag mismatches; adding self-checking testbenches with automated pass/fail assertions is a natural next step.
 
-The project READMEs describe a Vivado workflow: add the design and its testbench as simulation sources, set the testbench as the simulation top, and run behavioral simulation. The repository does not use advanced synthesis or timing analysis; it focuses on logic understanding and simulation-driven validation.
+In Vivado, the standard workflow is to add both the design module and its testbench as simulation sources, set the testbench as the simulation top, and run behavioral simulation. Behavioral simulation checks functional logic; synthesis is a separate step that maps supported RTL onto target hardware.
+
+---
 
 ## 1. Adders — `01_Adders_basics/`
 
-A half adder adds two one-bit inputs: `sum = a ^ b` and `carry = a & b`. A full adder adds a third input, `cin`; the sum is the XOR of all three inputs, and the carry is high when at least two inputs are high.
+A half adder sums two 1-bit inputs: `sum = a ^ b` and `carry = a & b`. A full adder includes a third carry-in input (`cin`), where `sum` is the XOR of all three inputs and `carry` goes high whenever at least two inputs are high.
 
-`rca_4bit.v` chains four full adders. Each bit's carry-out feeds the next bit's carry-in, from the least significant bit toward the most significant bit. This simple structure makes the dependency between stages clear and demonstrates carry propagation.
+`rca_4bit.v` chains four full-adder instances structurally. Each stage's `cout` feeds the next stage's `cin` from the least significant bit (LSB) to the most significant bit (MSB). This structure illustrates carry propagation and shows why the final carry-out is needed to represent arithmetic overflow beyond 4 bits (such as `15 + 1` or `15 + 15`).
 
 ### Figures
 
-The first four figures document the full-adder setup and its behavior: the force-clock view shows how inputs were driven in Vivado, the truth table lists all eight input combinations, and the schematic and waveform connect the logic to RTL simulation.
-
 #### Figure 1: Vivado force-clock setup for the full adder
-This setup drives the adder inputs under controlled timing so the logic can be exercised one bit pattern at a time.
+Before writing a full testbench, Vivado's Force Clock dialog lets you drive `a`, `b`, and `cin` with staggered periods (for example, 1x, 2x, and 4x) so every binary combination appears sequentially in the waveform viewer.
 
-![Vivado force-clock setup used to exercise the full-adder inputs](01_Adders_basics/images/FA_force_clocks.png)
+[01_Adders_basics/images/FA_force_clocks.png]
 
 #### Figure 2: Full-adder truth table
-This table shows the eight possible input combinations and the resulting sum and carry values for the 1-bit adder.
+This reference table lists all eight 3-bit input combinations (`000` through `111`) alongside the expected `sum` (odd parity of inputs) and `cout` (majority function, high when two or more inputs are `1`).
 
-![Full-adder truth table for a, b, and carry-in](01_Adders_basics/images/FA_truth_table.png)
+[01_Adders_basics/images/FA_truth_table.png]
 
 #### Figure 3: Full-adder RTL schematic
-The schematic shows the logical structure of the adder as implemented in RTL, highlighting the XOR and AND relationships behind the logic.
+Vivado's elaborated RTL schematic translates the Verilog description into interconnected XOR, AND, and OR primitives, making the two-stage sum path and carry-generation logic visually explicit.
 
-![Vivado schematic for the full-adder RTL](01_Adders_basics/images/FA_schematic.png)
+[01_Adders_basics/images/FA_schematic.png]
 
 #### Figure 4: Full-adder simulation waveform
-This waveform confirms that the adder output changes as expected for each input combination and that the carry-out is generated correctly.
+The waveform traces `a`, `b`, and `cin` across all eight combinations and confirms that `sum` and `cout` align with the truth table at each transition without unknown (`X`) states.
 
-![Simulation waveform showing full-adder inputs and outputs](01_Adders_basics/images/FA_truthtable_waveform.png)
+[01_Adders_basics/images/FA_truthtable_waveform.png]
 
-The half-adder `case` pair and the full-adder `case`, gate, and `if` pairs compare different RTL descriptions of the same small combinational functions. For each pair, the schematic is the tool's logic view, and the waveform verifies the output behavior.
+#### Figure 5: Half-adder `case` implementation schematic
+Writing a half adder with a procedural `case` statement inside an `always @*` block still elaborates to the same underlying XOR and AND hardware, showing that behavioral style maps cleanly to combinational gates when all input cases are covered.
 
-#### Figure 5: Half-adder case implementation schematic
-This schematic shows the half adder written with a `case` statement, illustrating a behavioral description that still maps cleanly to basic logic.
+[01_Adders_basics/images/HA_case_schematic.png]
 
-![Schematic for the half-adder case implementation](01_Adders_basics/images/HA_case_schematic.png)
+#### Figure 6: Half-adder `case` simulation
+The simulation waveform steps through `00`, `01`, `10`, and `11` on inputs `a` and `b`, verifying that `sum` pulses high only when the inputs differ (`01`, `10`) and `carry` goes high only for `11`.
 
-#### Figure 6: Half-adder case simulation
-The waveform verifies the half adder's sum and carry for all relevant input cases.
+[01_Adders_basics/images/HA_case_sim.png]
 
-![Simulation of the half-adder case implementation](01_Adders_basics/images/HA_case_sim.png)
+#### Figure 7: Full-adder `case` implementation schematic
+Using a 3-bit `case ({a, b, cin})` lookup table encodes the truth table directly; Vivado minimizes the table into standard logic gates rather than building a literal memory block.
 
-#### Figure 7: Full-adder case implementation schematic
-This schematic shows the full adder described with a `case` statement, emphasizing a compact behavioral encoding of the truth table.
+[01_Adders_basics/images/fa_case_schematic.png]
 
-![Schematic for the full-adder case implementation](01_Adders_basics/images/fa_case_schematic.png)
+#### Figure 8: Full-adder `case` simulation
+This waveform verifies all eight input combinations for the `case`-based full adder, confirming identical timing and output behavior to the reference truth table.
 
-#### Figure 8: Full-adder case simulation
-The waveform checks the full adder against all combinations of inputs and carry-in values.
-
-![Simulation of the full-adder case implementation](01_Adders_basics/images/fa_case_sim.png)
+[01_Adders_basics/images/fa_case_sim.png]
 
 #### Figure 9: Gate-level full-adder schematic
-This view makes the primitive logic implementation visible: XOR and AND gates are explicitly connected to realize the adder function.
+By instantiating primitive `xor`, `and`, and `or` gates explicitly in Verilog, the elaborated schematic mirrors the textbook two-half-adder-plus-OR-gate structure directly.
 
-![Schematic for the gate-level full-adder implementation](01_Adders_basics/images/fa_gate_schematic.png)
+[01_Adders_basics/images/fa_gate_schematic.png]
 
 #### Figure 10: Gate-level full-adder simulation
-The waveform confirms that the gate-level version behaves identically to the behavioral description of the same function.
+The waveform confirms that the structural gate-level netlist produces the same `sum` and `cout` responses across all eight input combinations as the behavioral `case` version.
 
-![Simulation of the gate-level full-adder implementation](01_Adders_basics/images/fa_gate_sim.png)
+[01_Adders_basics/images/fa_gate_sim.png]
 
 #### Figure 11: Full-adder `if-else` implementation schematic
-This implementation uses a procedural `if-else` structure to express the carry behavior in a natural RTL style.
+Expressing the full adder with `if-else` branches inside `always @*` demonstrates priority-style branching in RTL while still synthesizing to equivalent combinational adder gates.
 
-![Schematic for the full-adder if-else implementation](01_Adders_basics/images/fa_if_schematic.png)
+[01_Adders_basics/images/fa_if_schematic.png]
 
 #### Figure 12: Full-adder `if-else` simulation
-This simulation verifies that the conditional logic produces the same outputs as the truth table and gate-level implementations.
+This waveform checks every branch of the `if-else` model against the full 3-bit input sweep, confirming that no latches are inferred and all outputs match the expected adder behavior.
 
-![Simulation of the full-adder if-else implementation](01_Adders_basics/images/fa_if_sim.png)
-
-The final pair shows the four-stage ripple connection and selected arithmetic cases. In particular, inputs such as 15 + 1 and 15 + 15 demonstrate why the 4-bit `sum` alone is not the full result: the carry-out matters for correct arithmetic width handling.
+[01_Adders_basics/images/fa_if_sim.png]
 
 #### Figure 13: 4-bit ripple-carry adder schematic
-This schematic shows the cascaded full adder stages, where each carry-out feeds the next stage.
+Four 1-bit full-adder blocks are wired in series from bit 0 to bit 3, visually showing the carry-out of each stage feeding the carry-in of the next more significant stage.
 
-![Schematic showing four cascaded full-adder stages](01_Adders_basics/images/rca_4bit_schematic.png)
+[01_Adders_basics/images/rca_4bit_schematic.png]
 
 #### Figure 14: 4-bit ripple-carry adder simulation
-This waveform highlights edge cases such as overflow and final carry propagation in a 4-bit addition.
+Selected test vectors—including boundary cases such as `15 + 1` (`sum = 0`, `cout = 1`) and `15 + 15` (`sum = 14`, `cout = 1`)—highlight how 4-bit wrap-around works and why `cout` is essential for 5-bit accuracy.
 
-![Simulation of selected 4-bit addition and carry-out cases](01_Adders_basics/images/rca_4bit_sim.png)
+[01_Adders_basics/images/rca_4bit_sim.png]
+
+---
 
 ## 2. Multiplexers — `02_Multiplexers/`
 
-A 2-to-1 multiplexer routes one of two inputs to its output: `y = (~s & i0) | (s & i1)`. When `s` is 0, the output follows `i0`; when `s` is 1, it follows `i1`. `MUX_2x1.v`, `MUX_2x1_gate.v`, and `MUX_2x1_data.v` each describe the same selection function in a different style.
+A 2-to-1 multiplexer routes one of two inputs to its output: `y = (~s & i0) | (s & i1)`. When `s` is `0`, `y` follows `i0`; when `s` is `1`, `y` follows `i1`. `MUX_2x1.v`, `MUX_2x1_gate.v`, and `MUX2x1_data.v` express this same selection logic across behavioral (`always @*` with `output reg`), gate-level, and dataflow modeling styles.
 
-`mux_4x1.v` builds a 4-to-1 MUX from three 2-to-1 instances. `s0` selects within each input pair, and `s1` selects between the two intermediate results. The testbench uses distinct input values so that each select code can be interpreted visually.
+`mux_4x1.v` builds a 4-to-1 MUX structurally from three 2-to-1 instances: `s0` selects within each input pair, and `s1` chooses between the two intermediate outputs.
 
 ### Figures
 
-The first two images show the behavioral 2-to-1 MUX: its schematic and the simulation response as the select input changes.
-
 #### Figure 15: Behavioral 2-to-1 MUX schematic
-This is the high-level RTL view of the selector, where the output is described by the selected input choice.
+Vivado elaborates the behavioral `if-else` or `case` description into an `RTL_MUX` primitive, showing how high-level selection logic maps directly to a dedicated multiplexer symbol.
 
-![Schematic for the behavioral 2-to-1 MUX](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
+[02_Multiplexers/images/MUX_2x1_SCHEMATIC.png]
 
 #### Figure 16: Behavioral 2-to-1 MUX simulation
-The waveform shows how the output follows `i0` or `i1` depending on the select signal.
+The waveform toggles select line `s` while varying `i0` and `i1`, demonstrating that output `y` tracks `i0` when `s = 0` and switches cleanly to `i1` when `s = 1`.
 
-![Simulation showing the behavioral MUX output following the selected input](02_Multiplexers/images/MUX_2x1_SIM.png)
-
-These images show the gate-level version. The gate schematic makes the inverter, AND, and OR implementation of the selection equation visible; the waveform checks its output against the selected data inputs.
+[02_Multiplexers/images/MUX_2x1_SIM.png]
 
 #### Figure 17: Gate-level 2-to-1 MUX schematic
-This schematic reveals the logic gates used to implement the mux equation directly in hardware.
+Instantiating `not`, `and`, and `or` primitives explicitly exposes the internal sum-of-products hardware (`~s & i0 | s & i1`) behind a 2-to-1 multiplexer.
 
-![Gate schematic for the 2-to-1 MUX](02_Multiplexers/images/MUX_2x1_gate_schematic.png)
+[02_Multiplexers/images/MUX_2x1_gate_schematic.png]
 
 #### Figure 18: Gate-level 2-to-1 MUX simulation
-The waveform confirms that the gate-level implementation matches the intended selection behavior.
+The simulation confirms that the gate-level circuit switches between `i0` and `i1` identically to the behavioral `RTL_MUX` model.
 
-![Simulation of the gate-level 2-to-1 MUX](02_Multiplexers/images/MUX_2x1_gate_sim.png)
-
-The dataflow version expresses the same selection equation with a continuous assignment. Its schematic and simulation are a comparison with the behavioral and gate-level descriptions, not a different function.
+[02_Multiplexers/images/MUX_2x1_gate_sim.png]
 
 #### Figure 19: Dataflow 2-to-1 MUX schematic
-This representation uses a continuous assignment to model the same logic equation in a compact, hardware-oriented style.
+Writing the Boolean selection equation (or ternary operator `s ? i1 : i0`) in a continuous `assign` or dataflow `always @*` block yields a compact RTL view equivalent in function to the gate-level and behavioral forms.
 
-![Schematic for the dataflow 2-to-1 MUX](02_Multiplexers/images/MUX2x1_data_schematic.png)
+[02_Multiplexers/images/MUX2x1_data_schematic.png]
 
 #### Figure 20: Dataflow 2-to-1 MUX simulation
-The waveform shows that the continuous-assignment form behaves like the behavioral and gate-level versions.
+This waveform verifies that the dataflow implementation routes `i0` and `i1` cleanly under all combinations of `s`, `i0`, and `i1`.
 
-![Simulation of the dataflow 2-to-1 MUX](02_Multiplexers/images/MUX2x1_data_sim.png)
-
-The 4-to-1 MUX figures show the three-instance hierarchy and the output as all four select codes are applied.
+[02_Multiplexers/images/MUX2x1_data_sim.png]
 
 #### Figure 21: 4-to-1 MUX hierarchical schematic
-This schematic demonstrates how a larger mux can be built from smaller 2-to-1 mux blocks.
+Three 2-to-1 MUX instances are connected in a two-level tree: the first pair narrows four inputs down to two using `s0`, and the final stage uses `s1` to pick the single output `y`.
 
-![Schematic for the 4-to-1 MUX built from 2-to-1 MUXes](02_Multiplexers/images/mux_4x1_schematic.png)
+[02_Multiplexers/images/mux_4x1_schematic.png]
 
 #### Figure 22: 4-to-1 MUX simulation
-This waveform demonstrates the output for all four select values, making the selection tree easy to inspect.
+With distinct patterns placed on the four data inputs, stepping `s[1:0]` from `00` to `11` makes it straightforward to verify that each select code routes its corresponding channel to `y`.
 
-![Simulation of the 4-to-1 MUX for each select code](02_Multiplexers/images/mux_4x1_sim.png)
+[02_Multiplexers/images/mux_4x1_sim.png]
+
+---
 
 ## 3. Demultiplexers and decoders — `03_Decoders_Demux/`
 
-A 1-to-4 demultiplexer routes one data input to one of four outputs, according to its two select bits. A 2-to-4 decoder does a related but different job: it activates one output corresponding to a two-bit input code.
+A 1-to-4 demultiplexer routes a single data input to one of four outputs based on two select bits. A 2-to-4 decoder performs a related function by asserting one active output corresponding to a 2-bit input code.
 
-`dec_3to8.v` composes enabled 2-to-4 decoders to produce eight one-hot outputs. `func_decoder.v` then demonstrates a common use for a decoder: OR selected minterm outputs to implement a Boolean function.
+`dec_3to8.v` expands this concept structurally by combining two enabled 2-to-4 decoders to produce eight one-hot outputs. `func_decoder.v` shows how decoder outputs (minterms) can be ORed together to implement an arbitrary Boolean function.
 
 ### Figures
 
-The demultiplexer schematic shows the data-routing logic. Its simulation exercises the select combinations and shows which output receives the input value.
-
 #### Figure 23: 1-to-4 demultiplexer schematic
-This diagram highlights how the select bits choose which output channel receives the input data.
+The elaborated schematic shows the select-line decoding logic gating the single data input `d` onto one of four output lines (`y0`–`y3`).
 
-![Schematic for the 1-to-4 demultiplexer](03_Decoders_Demux/images/demux_1x4_schematic.png)
+[03_Decoders_Demux/images/demux_1x4_schematic.png]
 
 #### Figure 24: 1-to-4 demultiplexer simulation
-The waveform shows the selected output receiving the input value while the others remain inactive.
+As the 2-bit select input steps through `00`, `01`, `10`, and `11`, the waveform shows the input signal `d` appearing solely on the addressed output channel while the remaining three stay `0`.
 
-![Simulation of the 1-to-4 demultiplexer routing](03_Decoders_Demux/images/demux_1x4_sim.png)
-
-The 2-to-4 decoder pair shows the one-hot output behavior for the two-bit input code. The separate 3-to-8 pair shows how the smaller enabled decoders are connected to expand the number of decoded outputs.
+[03_Decoders_Demux/images/demux_1x4_sim.png]
 
 #### Figure 25: 2-to-4 decoder schematic
-This schematic shows the one-hot decoding logic for a two-bit input value.
+This schematic illustrates how two input bits (and an optional enable) are decoded into four mutually exclusive one-hot output lines.
 
-![Schematic for the 2-to-4 decoder](03_Decoders_Demux/images/dec_2to4_schematic.png)
+[03_Decoders_Demux/images/dec_2to4_schematic.png]
 
 #### Figure 26: 2-to-4 decoder simulation
-The waveform confirms that exactly one output is active for each valid input code.
+The waveform steps through all four 2-bit input codes (`00` to `11`), confirming a clean one-hot pattern where exactly one output line asserts high per code.
 
-![Simulation of the 2-to-4 decoder output codes](03_Decoders_Demux/images/dec_2to4_sim.png)
+[03_Decoders_Demux/images/dec_2to4_sim.png]
 
 #### Figure 27: 3-to-8 decoder structural schematic
-This schematic demonstrates how enabled 2-to-4 decoders are combined to create a larger decoder.
+Two 2-to-4 decoder instances share the lower two input bits, while the MSB acts as an active-high/active-low enable selector—activating the lower four outputs (`0`–`3`) or upper four outputs (`4`–`7`).
 
-![Structural schematic for the 3-to-8 decoder](03_Decoders_Demux/images/dec_3to8_schematic.png)
+[03_Decoders_Demux/images/dec_3to8_schematic.png]
 
 #### Figure 28: 3-to-8 decoder simulation
-The waveform verifies the eight one-hot outputs for all 3-bit input values.
+Sweeping the 3-bit input from `000` to `111` produces a diagonal one-hot staircase across the eight output lines in the waveform viewer.
 
-![Simulation of the 3-to-8 decoder output codes](03_Decoders_Demux/images/dec_3to8_sim.png)
-
-The final pair documents the decoder-based function. The schematic shows the selected decoder outputs combined at `y`; the simulation applies input codes so the output can be compared with the chosen Boolean function.
+[03_Decoders_Demux/images/dec_3to8_sim.png]
 
 #### Figure 29: Decoder-based Boolean function schematic
-This view shows how decoder outputs are combined with OR logic to create a custom logic function.
+This view shows a decoder block whose selected minterm outputs are combined by an OR gate to realize a target truth table without separate Karnaugh-map minimization.
 
-![Schematic for the Boolean function built from decoder outputs](03_Decoders_Demux/images/func_decoder_schematic.png)
+[03_Decoders_Demux/images/func_decoder_schematic.png]
 
 #### Figure 30: Decoder-based Boolean function simulation
-The waveform checks that the output matches the expected Boolean function for each input code.
+The waveform exercises all input combinations and verifies that output `y` asserts high only for the chosen minterms of the Boolean function.
 
-![Simulation of the decoder-based Boolean function](03_Decoders_Demux/images/func_decoder_sim.png)
+[03_Decoders_Demux/images/func_decoder_sim.png]
+
+---
 
 ## 4. Gray-to-binary conversion — `04_Code_Converters/`
 
-In a reflected Gray-code sequence, adjacent values differ in one bit. This property can reduce the chance of observing a multi-bit transition partway through when a changing value crosses physical signal boundaries.
+In a reflected Gray-code sequence, adjacent values differ in only one bit. This property helps reduce the risk of sampling an intermediate glitch when multi-bit values cross physical signal boundaries.
 
-For four-bit Gray-to-binary conversion, the most significant binary bit is the Gray MSB, and each following binary bit is the XOR of the preceding binary bit and the next Gray bit:
+For 4-bit Gray-to-binary conversion, the MSB passes through directly and each subsequent binary bit is the XOR of the preceding binary bit and the current Gray bit:
 
 - `B[3] = G[3]`
 - `B[2] = B[3] ^ G[2]`
 - `B[1] = B[2] ^ G[1]`
 - `B[0] = B[1] ^ G[0]`
 
-`gtob_data.v` expresses these equations directly. `gtob_case.v` lists all 16 input/output mappings. Its `default` assignment makes the combinational block complete; it is not a special mechanism needed for all combinational logic, but it ensures no unassigned case is left undefined.
+`gtob_data.v` implements these XOR equations directly, whereas `gtob_case.v` maps all 16 input combinations explicitly with a `default` branch to keep the combinational `case` block complete.
 
-The schematic shows the XOR logic inferred from the dataflow equations. The waveform corresponds to the testbench sweep over all 16 four-bit input patterns; the current testbench instantiates `gtob_case.v` and displays the conversion across the Gray sequence.
+### Figures
 
 #### Figure 31: Gray-to-binary conversion schematic
-This schematic makes the cascade of XOR operations visible, which is the core of Gray-to-binary conversion.
+The schematic displays the three-stage XOR chain where `G[3]` passes straight to `B[3]` and each downstream binary bit is derived by XORing the previous binary bit with the next Gray input bit.
 
-![Schematic for the dataflow Gray-to-binary converter](04_Code_Converters/images/gtob_data_schematic.png)
+[04_Code_Converters/images/gtob_data_schematic.png]
 
 #### Figure 32: Gray-to-binary conversion simulation
-This waveform verifies that every Gray-code input maps to the correct binary output across the full 16-point sequence.
+The waveform sweeps across all 16 four-bit patterns and confirms that each Gray-code input (`0000`, `0001`, `0011`, `0010`, ...) translates to its corresponding binary count (`0` through `15`).
 
-![Simulation waveform for Gray-to-binary conversion](04_Code_Converters/images/gtob_data_sim.png)
+[04_Code_Converters/images/gtob_data_sim.png]
+
+---
 
 ## 5. One-bit magnitude comparator — `05_Comparators/`
 
-The one-bit comparator produces three mutually exclusive results:
+The 1-bit comparator produces three mutually exclusive outputs:
 
 - `g = a & ~b`: `a` is greater than `b`.
-- `e = a ~^ b`: the inputs are equal (XNOR).
+- `e = a ~^ b`: `a` is equal to `b` (XNOR).
 - `s = ~a & b`: `a` is smaller than `b`.
 
-The schematic shows the logic for all three outputs. The simulation applies the four possible input pairs and lets the three comparison results be checked together. For wider unsigned values, comparisons are performed bit by bit, with the most significant bits resolved first.
+For multi-bit unsigned comparators, comparison proceeds from the MSB downward; the first differing bit position determines which operand is larger.
+
+### Figures
 
 #### Figure 33: 1-bit comparator schematic
-This diagram illustrates the logic for greater-than, equal-to, and less-than conditions of a single-bit comparison.
+The schematic shows the three parallel combinational paths driving `g`, `e`, and `s` from inputs `a` and `b` using inverters, AND gates, and an XNOR gate.
 
-![Schematic for the one-bit greater/equal/smaller comparator](05_Comparators/images/comp_1bit_schematic.png)
+[05_Comparators/images/comp_1bit_schematic.png]
 
 #### Figure 34: 1-bit comparator simulation
-This waveform verifies all four input combinations and shows the three mutually exclusive comparison outputs together.
+Testing all four input pairs (`00`, `01`, `10`, `11`) demonstrates that exactly one of `g`, `e`, or `s` is high at any time—`e` for `00` and `11`, `s` for `01`, and `g` for `10`.
 
-![Simulation of all four one-bit comparison cases](05_Comparators/images/comp_1bit_sim.png)
+[05_Comparators/images/comp_1bit_sim.png]
+
+---
+
+## 6. Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`
+
+Unlike combinational circuits, sequential circuits include memory elements that retain past state, forming the basis of registers, counters, RAM, and ROM. Every sequential element relies on a clock or enable trigger to determine when its stored output updates.
+
+### Triggering and storage elements
+
+- **Level-sensitive latch vs. edge-triggered flip-flop:** A latch is transparent while its enable level (high or low) is active and holds its value otherwise. A flip-flop samples inputs and updates state only at a rising (`posedge clk`) or falling (`negedge clk`) clock edge, producing synchronous behavior.
+- **SR latch (`sr_latch.v`):** Built from cross-coupled NOR (or NAND) gates. For an active-high NOR latch, `S=1, R=0` sets `Q=1`, `S=0, R=1` resets `Q=0`, `S=R=0` holds `Q`, and `S=R=1` is an invalid state.
+- **SR flip-flop (`sr_ff.v`):** Adds clock gating to the SR structure inside `always @(posedge clk)`. Any output assigned inside an `always` block must be declared as `output reg` (assigning to a plain wire causes a procedural assignment error in Vivado).
+- **D flip-flop (`d_ff.v`, `d_ff_clr.v`):** The simplest flip-flop, capturing `Q <= D` on the active clock edge. `d_ff_clr.v` adds a synchronous `clear` checked on the clock edge.
+- **T flip-flop (`t_ff.v`):** Holds `Q` when `T=0` and toggles (`Q <= ~Q`) when `T=1`. Without an explicit reset or simulation initialization (`initial begin Q = 0; end`), `Q` remains unknown (`X`) during simulation.
+- **JK flip-flop (`jk_ff.v`):** Modifies the SR flip-flop so that `J=1, K=1` toggles `Q` instead of entering an invalid state, implemented cleanly with `case({J, K})`.
+
+| Storage Element | Triggering | Key Behavior / Special Case |
+| :--- | :--- | :--- |
+| **SR Latch** | Level-sensitive | `S=1, R=1` is invalid; holds when `S=R=0` |
+| **SR Flip-Flop** | Edge-triggered | Clocked SR; requires `output reg` in `always` blocks |
+| **D Flip-Flop** | Edge-triggered | `Q(t+1) = D`; core building block for registers |
+| **T Flip-Flop** | Edge-triggered | Toggles when `T=1`; needs reset or init to avoid `X` |
+| **JK Flip-Flop** | Edge-triggered | Eliminates invalid state; toggles when `J=1, K=1` |
+
+### Registers and shift registers
+
+A register groups multiple flip-flops under a shared clock to store multi-bit words (`reg [3:0] Q`).
+
+- **Load and clear priority (`reg_4bit.v`, `reg_4bit_str.v`, `reg_4bit_clear.v`):** `reg_4bit_str.v` pairs each D flip-flop with a 2-to-1 MUX so `load=0` feeds back `Q` (hold) and `load=1` loads `D`. `reg_4bit_clear.v` adds a synchronous `clear` checked before `load` in an `if-else` chain, giving `clear` priority over `load`.
+- **I/O modes:** Registers are categorized by how data enters and exits: **SISO** (Serial-In, Serial-Out), **SIPO** (Serial-In, Parallel-Out), **PISO** (Parallel-In, Serial-Out), and **PIPO** (Parallel-In, Parallel-Out).
+- **4-bit SIPO shift register (`sipo_4bit.v`):** Shifts 1 bit of serial input (`Din`) per active clock edge; a full 4-bit parallel word (`Q[3:0]`) is available after four clock cycles. Because this implementation omits a reset, initial simulation bits appear as `X` until shifted out.
+- **4-bit bidirectional PIPO shift register (`reg_pipo.v`):** Uses a 4-to-1 MUX (`MUX4x1`) per `DFF_clr` flip-flop controlled by `CTRL[1:0]`:
+
+| `CTRL[1:0]` | Operation | Next State Source |
+| :--- | :--- | :--- |
+| `00` | Hold | Current `Q` |
+| `01` | Left Shift | Serial input `XL` and neighbor bits |
+| `10` | Right Shift | Serial input `XR` and neighbor bits |
+| `11` | Parallel Load | Parallel input `D[3:0]` |
+
+### Counters and patterns
+
+- **Asynchronous (ripple) counter (`counter_4_async.v`):** Each flip-flop's output clocks the next stage (typically using `J=1, K=1` toggle flip-flops). While simple to wire, accumulated propagation delay slows counting and can cause transient glitches. In behavioral Verilog, triggering on `negedge` of the previous stage counts up (`0` to `15`), whereas triggering on `posedge` counts down (`15` to `0`). Using `initial` for startup values works in simulation, but an explicit reset is needed for portable hardware.
+- **Synchronous counter:** All flip-flops share a single clock edge, providing uniform timing and fewer glitches at the cost of more complex next-state logic. Up/down direction is controlled via a `dir` signal (`dir == 0` counts up, `dir == 1` counts down). No standalone synchronous up/down counter module is currently included in this folder.
+- **Pattern counters (Ring and Johnson):**
+  - A **4-bit ring counter** circulates a single `1` bit through four states (`1000 -> 0100 -> 0010 -> 0001`). This concept is documented here; no separate ring-counter file is currently in the folder.
+  - A **4-bit Johnson counter (`count_4_johnson.v`)** feeds the inverted last bit back into the shift chain (`temp = {~temp[0], temp[3:1]}`) with an asynchronous reset, cycling through eight states:
+    `0000 -> 1000 -> 1100 -> 1110 -> 1111 -> 0111 -> 0011 -> 0001 -> 0000`.
+
+### Figures
+
+#### Figure 35: SR latch RTL schematic
+Vivado elaborates the cross-coupled `nor` gates (`q` and `qbar` feeding back into each other's inputs) into `RTL_OR` and `RTL_INV` primitives, showing the asynchronous feedback loop that holds 1 bit of state.
+
+[06_Sequential_Logic_Basics/images/01_sr_latch_sch.png]
+
+#### Figure 36: SR latch simulation waveform
+The waveform demonstrates asynchronous set (`S=1, R=0` drives `Q=1`), reset (`S=0, R=1` drives `Q=0`), and hold (`S=0, R=0` preserves `Q`), while starting in an unknown (`X`) state prior to the first valid input.
+
+[06_Sequential_Logic_Basics/images/01_sr_latch_waveform.png]
+
+#### Figure 37: SR flip-flop RTL schematic
+Adding `always @(posedge clk)` causes Vivado to infer synchronous registers (`RTL_REG_SYNC`) preceded by equality and AND gating logic for `S` and `R`, ensuring outputs update only on the rising clock edge.
+
+[06_Sequential_Logic_Basics/images/02_sr_ff_sch.png]
+
+#### Figure 38: SR flip-flop simulation waveform
+Changes on `s` and `r` take effect only at `posedge clk`, confirming synchronous set, reset, and hold behavior while `qbar` tracks the complement of `q`.
+
+[06_Sequential_Logic_Basics/images/02_sr_ff_waveform.png]
+
+#### Figure 39: D flip-flop RTL schematic
+Vivado synthesizes the behavioral `Q <= D` assignment inside `always @(posedge clk)` into a single `RTL_REG` storage element with `D` connected to its data input and `clk` driving its clock pin.
+
+[06_Sequential_Logic_Basics/images/03_d_ff_sch.png]
+
+#### Figure 40: D flip-flop simulation waveform
+The waveform confirms that `Q` samples `D` strictly at each rising clock edge and holds that value steady across the rest of the clock period.
+
+[06_Sequential_Logic_Basics/images/03_d_ff_waveform.png]
+
+#### Figure 41: T flip-flop RTL schematic
+The elaborated schematic shows an `RTL_REG` whose `D` input is driven by an inverter (`RTL_INV`) from its own `Q` output, with `T` acting as the clock-enable (`CE`) so the register toggles only when `T = 1`.
+
+[06_Sequential_Logic_Basics/images/04_t_ff_sch.png]
+
+#### Figure 42: T flip-flop simulation waveform
+With `Q` initialized to `0`, the waveform verifies that `Q` holds steady when `T = 0` and flips state (`0 -> 1 -> 0`) on each active clock edge when `T = 1`.
+
+[06_Sequential_Logic_Basics/images/04_t_ff_waveform.png]
+
+#### Figure 43: JK flip-flop RTL schematic
+The `case({J, K})` logic elaborates into `RTL_MUX` blocks feeding an `RTL_REG`, routing `Q`, `0`, `1`, or `~Q` into the flip-flop's `D` input based on `{J, K}` without an invalid state.
+
+[06_Sequential_Logic_Basics/images/05_jk_ff_sch.png]
+
+#### Figure 44: JK flip-flop simulation waveform
+The waveform checks all four `{J, K}` combinations (`00` hold, `01` reset, `10` set, `11` toggle) and confirms `Q` flips cleanly on clock edges when `J = 1` and `K = 1`.
+
+[06_Sequential_Logic_Basics/images/05_jk_ff_waveform.png]
+
+#### Figure 45: 4-bit register RTL schematic
+The behavioral 4-bit register (`reg [3:0] Q`) elaborates into a 4-bit synchronous register block clocked by `clk`, capturing the entire `D[3:0]` bus in parallel.
+
+[06_Sequential_Logic_Basics/images/06_reg_4bit_sch.png]
+
+#### Figure 46: 4-bit register simulation waveform
+Multi-bit values on `D[3:0]` transfer onto `Q[3:0]` simultaneously at each active clock edge and remain latched until the next clock edge.
+
+[06_Sequential_Logic_Basics/images/06_reg_4bit_waveform.png]
+
+#### Figure 47: Structural 4-bit loadable register RTL schematic
+Four `MUX_2x1_gate` instances sit ahead of four `DFF` instances: `load = 0` feeds each `Q[i]` back to its `D` input to hold state, while `load = 1` selects `D[i]` to load new data.
+
+[06_Sequential_Logic_Basics/images/07_reg_4bit_str_sch.png]
+
+#### Figure 48: Structural 4-bit loadable register simulation waveform
+The waveform shows `Q[3:0]` ignoring changes on `D[3:0]` while `load = 0` and updating to the new `D[3:0]` value on the rising clock edge only when `load = 1`.
+
+[06_Sequential_Logic_Basics/images/07_reg_4bit_str_waveform.png]
+
+#### Figure 49: 4-bit register with synchronous clear RTL schematic
+The schematic shows the priority logic inferred from the `if (clear) ... else if (!load) ...` structure, routing `4'b0000` ahead of hold and load paths into the 4-bit register.
+
+[06_Sequential_Logic_Basics/images/08_reg_4bit_clear_sch.png]
+
+#### Figure 50: 4-bit register with synchronous clear simulation waveform
+Asserting `clear = 1` forces `Q[3:0]` to `0` on the rising clock edge regardless of `load`; once `clear` returns to `0`, `Q[3:0]` holds when `load = 0` and updates when `load = 1`.
+
+[06_Sequential_Logic_Basics/images/08_reg_4bit_clear_waveform.png]
+
+#### Figure 51: D flip-flop with synchronous clear RTL schematic
+This schematic shows the single-bit `d_ff_clr` building block used in larger structural designs like `reg_pipo.v`, combining a synchronous `clear` input with `D` and `clk`.
+
+[06_Sequential_Logic_Basics/images/09_d_ff_clr_sch.png]
+
+#### Figure 52: 4-to-1 MUX building block for PIPO shift register RTL schematic
+This `MUX4x1` schematic illustrates the 4-way selector used at each bit position of the universal shift register to pick among hold (`00`), left shift (`01`), right shift (`10`), and parallel load (`11`).
+
+[06_Sequential_Logic_Basics/images/10_mux_4x1_pipo_sch.png]
+
+#### Figure 53: 4-bit bidirectional PIPO shift register RTL schematic
+Four `MUX4x1` blocks feed four `DFF_clr` flip-flops, with neighbor `Q` outputs cross-wired to the `01` (left shift) and `10` (right shift) MUX inputs alongside `XL`, `XR`, and `D[3:0]`.
+
+[06_Sequential_Logic_Basics/images/11_reg_pipo_sch.png]
+
+#### Figure 54: 4-bit bidirectional PIPO shift register simulation waveform
+Stepping `CTRL[1:0]` through `11` (parallel load `0011`), `01` (left shift with `XL=1` -> `0111` -> `1111`), `10` (right shift with `XR=0` -> `0111`), and `00` (hold) verifies all four operating modes in sequence.
+
+[06_Sequential_Logic_Basics/images/11_reg_pipo_waveform.png]
+
+#### Figure 55: 4-bit SIPO shift register RTL schematic
+Four D flip-flops are chained serially (`Q` of each stage driving `D` of the next) under a common `clk`, with each stage's `Q` also brought out to form the 4-bit parallel output `Q[3:0]`.
+
+[06_Sequential_Logic_Basics/images/12_sipo_4bit_sch.png]
+
+#### Figure 56: 4-bit SIPO shift register simulation waveform
+Starting from `XXXX`, each rising clock edge shifts `Din` one position deeper (`XXX1` -> `XX11` -> `X111` -> `1111`), showing that four clock cycles are required before all four bits of `Q[3:0]` hold valid data.
+
+[06_Sequential_Logic_Basics/images/12_sipo_4bit_waveform.png]
+
+#### Figure 57: 4-bit asynchronous (ripple) counter RTL schematic
+Four toggle stages are cascaded so that `clk` drives bit 0 while each bit's output drives the clock pin of the next stage, visually distinguishing ripple clocking from a shared synchronous clock tree.
+
+[06_Sequential_Logic_Basics/images/13_counter_4_async_sch.png]
+
+#### Figure 58: 4-bit asynchronous (ripple) counter simulation waveform
+The waveform traces `count[3:0]` advancing through the 4-bit binary sequence (`0` to `15` / `0`–`f` on `negedge`, or counting down on `posedge`), with each higher bit toggling at half the frequency of the bit below it.
+
+[06_Sequential_Logic_Basics/images/13_counter_4_async_waveform.png]
+
+#### Figure 59: 4-bit Johnson counter RTL schematic
+The elaborated schematic shows the 4-bit shift chain with the inverted LSB (`~temp[0]`) looped back to the MSB input and an asynchronous `reset` clearing all four flip-flops to `0`.
+
+[06_Sequential_Logic_Basics/images/14_count_4_johnson_sch.png]
+
+#### Figure 60: 4-bit Johnson counter simulation waveform
+Once `reset` deasserts, `count[3:0]` steps through the eight-state twisted-ring sequence in hexadecimal (`0 -> 8 -> c -> e -> f -> 7 -> 3 -> 1 -> 0`), verifying the `2n = 8` state cycle for a 4-bit Johnson counter.
+
+[06_Sequential_Logic_Basics/images/14_count_4_johnson_waveform.png]
+
+---
+
+## 7. Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`
+
+Effective debugging starts with reproducing the issue and identifying its stage: syntax error, compilation/elaboration error, runtime/simulation mismatch, or synthesis warning.
+
+### Effective debugging practices
+
+- **Isolate the context:** Record the exact error message, tool and version (Vivado or ModelSim), affected module and port names, vector widths, and clock/reset conditions.
+- **Trace `X` values:** Unknown states in waveforms usually indicate uninitialized registers, missing reset assertions, multi-driver conflicts, or incomplete testbench stimulus.
+- **Write actionable problem reports:** Provide the exact diagnostic text, tool name, and the minimal module plus testbench code rather than vague descriptions like *"my code is not working."*
+
+### Synthesizable RTL guidelines
+
+Synthesizable RTL describes logic that synthesis tools (such as Vivado or Quartus) can map onto physical gates, multiplexers, and flip-flops:
+
+- Use **nonblocking assignments (`<=`)** for sequential state updates and **blocking assignments (`=`)** for combinational calculations.
+- Assign all outputs on every path in combinational `always @*` blocks to avoid unintended latch inference.
+- Keep sensitivity lists complete (`always @*` in Verilog or `always_comb` in SystemVerilog).
+- Describe reset behavior explicitly and consistently (synchronous or asynchronous, active-high or active-low).
+- Keep simulation-only constructs—such as `#` delays, `forever` loops, `wait` statements, file I/O, and `real` data types—out of RTL modules and inside testbenches.
+- Avoid `initial` blocks in portable ASIC RTL (FPGA tools may support them for certain resources, depending on device and flow).
+- Inspect **synthesis warnings** as well as errors; warnings frequently reveal inferred latches, undriven nets, width mismatches, or trimmed logic.
+
+### Synthesizability checklist
+
+1. Remove `#` delays and simulation-only tasks from synthesizable RTL files.
+2. Confirm combinational blocks assign every output on all paths and sequential blocks trigger on the intended clock edge.
+3. Verify reset polarity, synchronous/asynchronous behavior, and priority relative to control signals like `load`.
+4. Check port directions and vector widths across all module instantiations.
+5. Run synthesis in Vivado or Quartus and review all warnings alongside errors.
+
+Note: `07_Verilog_Debugging/` currently contains documentation rather than standalone design or testbench files.
+
+---
 
 ## Scope and next work
 
-The examples cover combinational arithmetic, selection and routing, decoding, Gray-to-binary conversion, and one-bit comparison. They do not yet cover sequential blocks, finite-state machines, and encoding/decoding patterns beyond the basic combinational logic explored here.
+This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practices. Natural next steps include adding self-checking testbenches with automated pass/fail checks, implementing a synchronous up/down counter module, exploring finite-state machines (FSMs), and running synthesis and timing analysis exercises.
