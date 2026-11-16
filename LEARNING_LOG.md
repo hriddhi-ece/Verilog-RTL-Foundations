@@ -625,25 +625,25 @@ Following Xilinx Vivado simulation and power-analysis practices, these projects 
 
 *(Drop your Vivado screenshots into `10_RTL_Mini_Projects/images/` with matching filenames once simulated/implemented.)*
 
-#### Figure XX: Car parking system behavioral simulation
+#### Figure : Car parking system behavioral simulation
 *Simulation waveform showing `Cars[7:0]` sensor combinations and the corresponding `num[3:0]` count.*
 
-![Figure XX: Car parking system behavioral simulation](10_RTL_Mini_Projects/images/car_parking_sim.png)
+![Figure: Car parking system behavioral simulation](10_RTL_Mini_Projects/images/car_parking_sim.png)
 
-#### Figure XX+1: Car parking 7-segment RTL schematic
+#### Figure : Car parking 7-segment RTL schematic
 *Elaborated schematic of `Car_parking_7_seg` driving `seg[6:0]` and `AN[7:0]` for Nexys 4 DDR.*
 
-![Figure XX+1: Car parking 7-segment RTL schematic](10_RTL_Mini_Projects/images/car_parking_7seg_schematic.png)
+![Figure : Car parking 7-segment RTL schematic](10_RTL_Mini_Projects/images/car_parking_7seg_schematic.png)
 
-#### Figure XX+2: Vending machine FSM simulation
+#### Figure : Vending machine FSM simulation
 *Waveform verifying `Sin`–`S80` state transitions, product dispense (`Z`), and change return (`change_given`).*
 
-![Figure XX+2: Vending machine FSM simulation](10_RTL_Mini_Projects/images/vending_machine_sim.png)
+![Figure : Vending machine FSM simulation](10_RTL_Mini_Projects/images/vending_machine_sim.png)
 
-#### Figure XX+3: 4-way traffic controller simulation
+#### Figure : 4-way traffic controller simulation
 *Waveform showing full 4-direction green/yellow/red rotation and `reset` recovery.*
 
-![Figure XX+3: 4-way traffic controller simulation](10_RTL_Mini_Projects/images/traffic_sys_sim.png)
+![Figure : 4-way traffic controller simulation](10_RTL_Mini_Projects/images/traffic_sys_sim.png)
 
 ## Scope and next work
 
