@@ -20,8 +20,9 @@ The goal is to build hardware intuition: Verilog RTL describes logic that can be
 - [`03_Decoders_Demux/`](./03_Decoders_Demux/) — A 1-to-4 demultiplexer, 2-to-4 decoders, a structural 3-to-8 decoder, and a decoder-based Boolean function.
 - [`04_Code_Converters/`](./04_Code_Converters/) — Gray-to-binary conversion using `case` and dataflow XOR logic.
 - [`05_Comparators/`](./05_Comparators/) — A one-bit magnitude comparator.
-- [`06_Sequential_Logic_Basics/`](./06_Sequential_Logic_Basics/) — Latches, flip-flops, registers, shift registers, and counters.
-- [`07_Verilog_Debugging/`](./07_Verilog_Debugging/) — Debugging strategies and synthesizable RTL guidance.
+- [`06_Sequential_Logic_Basics/`](./06_Sequential_Logic_Basics/) — SR latch, D/T/JK flip-flops, shift registers, and basic counters.
+- [`07_Verilog_Debugging/`](./07_Verilog_Debugging/) — Guidelines for debugging, simulation tracking, and writing synthesizable RTL.
+- [`08_Finite_State_Machines/`](./08_Finite_State_Machines/) — Moore and Mealy FSMs for counters and pattern detection.
 - [`LEARNING_LOG.md`](./LEARNING_LOG.md) — Explanations of the RTL concepts and figures demonstrated by the examples.
 
 ## Verification

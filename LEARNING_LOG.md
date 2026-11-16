@@ -12,7 +12,8 @@ This log connects the circuits in this repository to the RTL concepts they demon
 6. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
 7. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
 8. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
-9. [Scope and next work](#scope-and-next-work)
+9. [Finite state machines — `08_Finite_State_Machines/`](#8-finite-state-machines--08_finite_state_machines)
+10. [Scope and next work](#scope-and-next-work)
 
 ---
 
@@ -483,6 +484,73 @@ Synthesizable RTL describes logic that synthesis tools (such as Vivado or Quartu
 Note: `07_Verilog_Debugging/` currently contains documentation rather than standalone design or testbench files.
 
 ---
+
+---
+
+## 8. Finite state machines — `08_Finite_State_Machines/`
+
+A Finite State Machine (FSM) describes the sequence of steps taken by a digital system[cite: 111]. The system transitions between a finite number of conditions (states) based on incoming inputs and predefined sequences[cite: 111]. 
+
+FSMs are categorized into two primary types based on how outputs are generated:
+- **Moore Machine:** The output depends strictly on the current state[cite: 112].
+- **Mealy Machine:** The output depends on both the current state and the current input values[cite: 112].
+
+To ensure synthesizability and avoid simulation hazards, all FSMs in this repository are modeled using the standard 3-block architecture:
+1. **State Register:** A sequential `always @(posedge clk)` block that updates `state <= next_state`.
+2. **Next-State Logic:** A combinational `always @*` block using a complete `case` statement to determine transitions.
+3. **Output Logic:** A combinational `always @*` block driving outputs based on `state` (Moore) or `state` and inputs (Mealy).
+
+### FSM Counters
+Counters can be modeled explicitly as state machines rather than simple arithmetic adders.
+- **Enabled Counter (`fsm_counter.v`):** Cycles through states `S0` to `S3` only when the `din` (enable) signal is asserted.
+- **Up/Down Counter (`fsm_up_down_count.v`):** A 4-state machine where `dir = 0` triggers upward counting transitions and `dir = 1` triggers downward counting transitions[cite: 123].
+
+### Pattern Detectors
+A pattern detector monitors a running serial bitstream to recognize a specific sequence (e.g., `1011`)[cite: 120].
+- **Moore Implementation (`fsm_pattern_moore.v`):** Requires 5 distinct states (`Sin`, `S1`, `S10`, `S101`, `S1011`) to detect the 4-bit `1011` sequence because the output must be mapped to a dedicated final state[cite: 126]. 
+- **Mealy Implementation (`fsm_pattern_mealy.v`):** Requires only 4 states (`Sin`, `S1`, `S10`, `S101`)[cite: 126]. The output is asserted dynamically during the transition from the final state when the correct input arrives, reducing the required hardware footprint.
+
+### Figures
+
+#### Figure 61: FSM counter RTL schematic
+*Elaborated schematic of `fsm_counter.v` showing the state register and combinational next-state routing.*
+
+![Figure 61: FSM counter RTL schematic](08_Finite_State_Machines/images/01_fsm_counter_sch.png)
+
+#### Figure 62: FSM counter simulation waveform
+*Simulation waveform showing state transitions pausing when `din = 0` and resuming when `din = 1`.*
+
+![Figure 62: FSM counter simulation waveform](08_Finite_State_Machines/images/01_fsm_counter_waveform.png)
+
+#### Figure 63: Up/Down counter FSM RTL schematic
+*Elaborated schematic of `fsm_up_down_count.v` driven by the `dir` control signal.*
+
+![Figure 63: Up/Down counter FSM RTL schematic](08_Finite_State_Machines/images/02_fsm_up_down_count_sch.png)
+
+#### Figure 64: Up/Down counter FSM simulation waveform
+*Simulation waveform verifying directional changes when `dir` toggles between `0` and `1`.*
+
+![Figure 64: Up/Down counter FSM simulation waveform](08_Finite_State_Machines/images/02_fsm_up_down_count_waveform.png)
+
+#### Figure 65: Moore pattern detector RTL schematic
+*Elaborated schematic of `fsm_pattern_moore.v` demonstrating the 5-state logic architecture.*
+
+![Figure 65: Moore pattern detector RTL schematic](08_Finite_State_Machines/images/03_fsm_pattern_moore_sch.png)
+
+#### Figure 66: Moore pattern detector simulation waveform
+*Simulation waveform showing `Z` asserting high exclusively when the state reaches `S1011`.*
+
+![Figure 66: Moore pattern detector simulation waveform](08_Finite_State_Machines/images/03_fsm_pattern_moore_waveform.png)
+
+#### Figure 67: Mealy pattern detector RTL schematic
+*Elaborated schematic of `fsm_pattern_mealy.v` demonstrating the reduced 4-state logic architecture.*
+
+![Figure 67: Mealy pattern detector RTL schematic](08_Finite_State_Machines/images/04_fsm_pattern_mealy_sch.png)
+
+#### Figure 68: Mealy pattern detector simulation waveform
+*Simulation waveform showing `Z` asserting immediately based on current input and state combination.*
+
+![Figure 68: Mealy pattern detector simulation waveform](08_Finite_State_Machines/images/04_fsm_pattern_mealy_waveform.png)
 
 ## Scope and next work
 
