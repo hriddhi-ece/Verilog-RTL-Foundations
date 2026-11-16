@@ -16,7 +16,7 @@ This log connects the circuits in this repository to the RTL concepts they demon
 
 ---
 
-## VLSI, FPGA, and RTL
+## [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
 
 VLSI design spans the path from defining a circuit's behavior to implementing and verifying it. In this repository, the focus is on Register Transfer Level (RTL) modeling and behavioral simulation. An RTL description abstracts circuit function into rules for how data moves between registers and logic blocks, which is the foundation for hardware design and verification.
 
@@ -39,7 +39,7 @@ In Vivado, the standard workflow is to add both the design module and its testbe
 
 ---
 
-## 1. Adders — `01_Adders_basics/`
+## [1. Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
 
 A half adder sums two 1-bit inputs: `sum = a ^ b` and `carry = a & b`. A full adder includes a third carry-in input (`cin`), where `sum` is the XOR of all three inputs and `carry` goes high whenever at least two inputs are high. This building block introduces the idea that arithmetic functions can be assembled from primitive Boolean operations.
 
@@ -119,7 +119,7 @@ A half adder sums two 1-bit inputs: `sum = a ^ b` and `carry = a & b`. A full ad
 
 ---
 
-## 2. Multiplexers — `02_Multiplexers/`
+## [2. Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
 
 A 2-to-1 multiplexer routes one of two inputs to its output: `y = (~s & i0) | (s & i1)`. When `s` is `0`, `y` follows `i0`; when `s` is `1`, `y` follows `i1`. `MUX_2x1.v`, `MUX_2x1_gate.v`, and `MUX2x1_data.v` show the same selection behavior expressed in behavioral, gate-level, and dataflow styles.
 
@@ -169,7 +169,7 @@ A 2-to-1 multiplexer routes one of two inputs to its output: `y = (~s & i0) | (s
 
 ---
 
-## 3. Demultiplexers and decoders — `03_Decoders_Demux/`
+## [3. Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
 
 A 1-to-4 demultiplexer routes a single data input to one of four outputs based on two select bits. A 2-to-4 decoder performs a related function by asserting one active output corresponding to a 2-bit input code. These circuits are used heavily in address decoding, enable gating, and control logic.
 
@@ -219,9 +219,9 @@ A 1-to-4 demultiplexer routes a single data input to one of four outputs based o
 
 ---
 
-## 4. Gray-to-binary conversion — `04_Code_Converters/`
+## [4. Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
 
-In a reflected Gray-code sequence, adjacent values differ in only one bit. This property helps reduce the risk of sampling an intermediate glitch when multi-bit values cross physical signal boundaries, especially in control and sensor interfaces.
+In a reflected Gray-code sequence, adjacent values differ in only one bit. This property helps reduce the risk of sampling an intermediate glitch when multi-bit values cross physical signal boundaries.
 
 For 4-bit Gray-to-binary conversion, the MSB passes through directly and each subsequent binary bit is the XOR of the preceding binary bit and the current Gray bit:
 
@@ -246,7 +246,7 @@ For 4-bit Gray-to-binary conversion, the MSB passes through directly and each su
 
 ---
 
-## 5. One-bit magnitude comparator — `05_Comparators/`
+## [5. One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
 
 The 1-bit comparator produces three mutually exclusive outputs:
 
@@ -270,7 +270,7 @@ For multi-bit unsigned comparators, comparison proceeds from the MSB downward; t
 
 ---
 
-## 6. Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`
+## [6. Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
 
 Unlike combinational circuits, sequential circuits include memory elements that retain past state, forming the basis of registers, counters, RAM, and ROM. Every sequential element relies on a clock or other timing event to decide when state should update.
 
@@ -450,7 +450,7 @@ A register groups multiple flip-flops under a shared clock to store multi-bit wo
 
 ---
 
-## 7. Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`
+## [7. Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
 
 Effective debugging starts with reproducing the issue and identifying its stage: syntax error, compilation/elaboration error, runtime/simulation mismatch, or synthesis warning.
 
@@ -483,6 +483,6 @@ Synthesizable RTL describes logic that synthesis tools (such as Vivado or Quartu
 Note: `07_Verilog_Debugging/` currently contains documentation rather than standalone design or testbench files.
 
 ---
-## Scope and next work
+## [Scope and next work](#scope-and-next-work)
 
 This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practice. The next step is to deepen the debugging section with concrete examples of common synthesis warnings, broaden the counter chapter with synchronous design examples, and continue adding more real-world RTL patterns such as finite-state machines and simple datapaths.
