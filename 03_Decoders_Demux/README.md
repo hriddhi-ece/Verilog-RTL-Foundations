@@ -14,3 +14,5 @@ All modules include `tb_*.v` testbenches utilizing `$monitor` for automated stim
 
 ### Visual Artifacts
 *(See `images/` folder for Vivado RTL schematics and simulation waveforms)*
+
+This module completes the combinational routing and decoding portion of the repository before the sequential logic and register-focused topics in `06_Sequential_Logic_Basics/`.

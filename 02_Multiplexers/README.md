@@ -13,3 +13,5 @@ Custom `tb_*.v` testbenches are provided for each design, using automated stimul
 
 ### Visual Artifacts
 *(See `images/` folder for Vivado RTL schematics and simulation waveforms)*
+
+This module is part of the repository's core combinational logic sequence and leads naturally into the sequential logic examples in `06_Sequential_Logic_Basics/`.

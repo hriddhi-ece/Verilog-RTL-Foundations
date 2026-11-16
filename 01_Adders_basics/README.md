@@ -22,10 +22,12 @@ This folder contains digital arithmetic circuits. Every design file is paired wi
 - **4-bit RCA:** `input [3:0] a, b`, `input c` | `output [3:0] sum`, `output cout`
 
 ### Verification
-The `tb_*.v` testbenches apply input patterns to display output signal changes to the console using `$monitor`. These truth tables are designed for visual inspection and do not perform automated pass/fail assertions.
+The `tb_*.v` testbenches apply input patterns to display output signal changes to the console using `$monitor`. These truth tables are designed for visual inspection and do not perform automated property checking.
 
 ### How to Simulate (Vivado)
 This repository is built around AMD Vivado. To run any testbench:
 1. Add the design `.v` file and its matching `tb_*.v` file to your Vivado project.
 2. Right-click the testbench in the Hierarchy window and select **Set as Top**.
 3. Click **Run Simulation** -> **Run Behavioral Simulation**.
+
+This module is part of the broader RTL foundations path in the repository and is followed by sequential logic topics in `06_Sequential_Logic_Basics/` and debugging guidance in `07_Verilog_Debugging/`.

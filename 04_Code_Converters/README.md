@@ -9,8 +9,10 @@ This module explores digital code translation, specifically converting Gray code
 
 ### Verification
 
-The `tb_gtob.v` testbench iterates through all 16 possible 4-bit combinations using automated stimulus generation to display the output against the standard Gray-to-binary truth table. It prints results with `$monitor`; it does not automatically compare them against expected values.
+The `tb_gtob.v` testbench iterates through all 16 possible 4-bit combinations using automated stimulus generation to display the output against the standard Gray-to-binary truth table. It prints result values directly to the console.
 
 ### Visual artifacts
 
 See the `images/` folder for Vivado RTL schematics and simulation waveforms.
+
+This module is part of the foundation sequence and complements the later sequential logic and debugging modules in `06_Sequential_Logic_Basics/` and `07_Verilog_Debugging/`.
