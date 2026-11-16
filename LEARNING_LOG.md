@@ -2,41 +2,41 @@
 
 This log connects the circuits in this repository to the RTL concepts they demonstrate. It starts with combinational logic, where outputs depend only on current inputs, and moves into sequential logic, where memory and time-dependent behavior dominate the design.
 
-## Table of Contents
+## Table of contents
 
- [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
-1. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
-2. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
-3. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
-4. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
-5. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
-6. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
-7. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
-8. [Finite state machines — `08_Finite_State_Machines/`](#8-finite-state-machines--08_finite_state_machines)
-9. [FPGA architecture and implementation flow — `09_FPGA_Implementation_Basics/`](#9-fpga-architecture-and-implementation-flow--09_fpga_implementation_basics)
-10. [RTL Mini-Projects — `10_RTL_Mini_Projects/`](#10-rtl-mini-projects--10_rtl_mini_projects)
-[Scope and next work](#scope-and-next-work)
+1. [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
+2. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
+3. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
+4. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
+5. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
+6. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
+7. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
+8. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
+9. [Finite state machines — `08_Finite_State_Machines/`](#8-finite-state-machines--08_finite_state_machines)
+10. [FPGA architecture and implementation flow — `09_FPGA_Implementation_Basics/`](#9-fpga-architecture-and-implementation-flow--09_fpga_implementation_basics)
+11. [RTL mini-projects — `10_RTL_Mini_Projects/`](#10-rtl-mini-projects--10_rtl_mini_projects)
+12. [Scope and next work](#scope-and-next-work)
 
 ---
 
 ## VLSI, FPGA, and RTL
 
-VLSI design spans the path from defining a circuit's behavior to implementing and verifying it. In this repository, the focus is on Register Transfer Level (RTL) modeling and behavioral simulation. An RTL description abstracts circuit function into rules for how data moves between registers and logic blocks, which is the foundation for hardware design and verification.
+VLSI design spans the path from defining a circuit’s behavior to implementing and verifying it. In this repository, the emphasis is on Register Transfer Level (RTL) modeling and behavioral simulation. An RTL description abstracts circuit function into rules for how data moves between registers and logic blocks, which is the foundation for hardware design and verification.
 
 Verilog models concurrent hardware behavior rather than a sequence of software instructions:
 
-- **`wire` vs. `reg`:** A `wire` is a net driven by a continuous assignment (`assign`), a module output, or a primitive gate. A `reg` is a procedural variable; declaring a signal as `reg` does not imply it is a storage element unless used in a clocked `always` block.
+- **`wire` vs. `reg`:** A `wire` is a net driven by a continuous assignment (`assign`), a module output, or a primitive gate. A `reg` is a procedural variable; declaring a signal as `reg` does not automatically make it a storage element unless it is used in a clocked `always` block.
 - **Continuous vs. procedural assignments:** `assign` continuously drives a net whenever its right-hand side changes. Procedural assignments (`=` or `<=`) live inside `always` or `initial` blocks.
-- **Blocking (`=`) vs. nonblocking (`<=`):** Blocking assignment (`=`) updates immediately in procedural order and suits combinational calculations. Nonblocking assignment (`<=`) schedules updates for the end of the time step, which is the correct model for sequential logic.
+- **Blocking (`=`) vs. nonblocking (`<=`):** Blocking assignment updates immediately in procedural order and suits combinational calculations. Nonblocking assignment schedules updates for the end of the time step, which is the correct model for sequential logic.
 - **Four-state simulation values:** Simulation uses `0`, `1`, `X` (unknown or conflicting drivers), and `Z` (high impedance). Unexpected `X` values often point to uninitialized registers or incomplete signal assignment patterns.
 - **Operators:** Bitwise operators (`&`, `|`, `^`) operate bit by bit, whereas logical operators (`&&`, `||`) evaluate to a single Boolean result. Case equality (`===`, `!==`) compares `X` and `Z` explicitly, which is valuable during debugging.
-- **Structural RTL:** Larger modules are built by instantiating smaller ones. Using explicit named port mapping (for example, `.E(E)`) makes module connections clearer and reduces wiring mistakes compared with positional port ordering.
+- **Structural RTL:** Larger modules are built by instantiating smaller ones. Using explicit named port mapping (for example, `.E(E)`) makes module connections clearer and reduces wiring mistakes compared to positional port ordering.
 
 ### Combinational logic and verification workflow
 
 In a combinational `always @*` block, every output should be assigned along every execution path. If an `if` or `case` branch omits an assignment, the signal must retain its previous value, which can accidentally infer a latch instead of a clean combinational circuit.
 
-The `tb_*.v` testbenches in this repository use **automated stimulus generation** and **print-based verification** via `$monitor` to log signal changes alongside waveform inspection. While printed traces are useful for debugging, the waveform display is often the clearest way to confirm timing and edge behavior.
+The `tb_*.v` testbenches in this repository use automated stimulus generation and print-based verification via `$monitor` to log signal changes alongside waveform inspection. Printed traces are useful for debugging, while the waveform display is often the clearest way to confirm timing and edge behavior.
 
 In Vivado, the standard workflow is to add both the design module and its testbench as simulation sources, set the testbench as the simulation top, and run behavioral simulation. Behavioral simulation checks logical correctness before synthesis, while synthesis then maps the design into actual gates and flip-flops.
 
@@ -46,12 +46,12 @@ In Vivado, the standard workflow is to add both the design module and its testbe
 
 A half adder sums two 1-bit inputs: `sum = a ^ b` and `carry = a & b`. A full adder includes a third carry-in input (`cin`), where `sum` is the XOR of all three inputs and `carry` goes high whenever at least two inputs are high. This building block introduces the idea that arithmetic functions can be assembled from primitive Boolean operations.
 
-`rca_4bit.v` chains four full-adder instances structurally. Each stage's `cout` feeds the next stage's `cin` from the least significant bit (LSB) to the most significant bit (MSB). This structure illustrates how larger arithmetic circuits are built from reusable units.
+`rca_4bit.v` chains four full-adder instances structurally. Each stage’s `cout` feeds the next stage’s `cin` from the least significant bit (LSB) to the most significant bit (MSB). This structure illustrates how larger arithmetic circuits are built from reusable units.
 
 ### Figures
 
 #### Figure 1: Vivado force-clock setup for the full adder
-*Vivado Force Clock setup driving `a`, `b`, and `cin` with staggered periods to sweep all input patterns.*
+*Vivado force-clock setup driving `a`, `b`, and `cin` with staggered periods to sweep all input patterns.*
 
 ![Figure 1: Vivado force-clock setup for the full adder](01_Adders_basics/images/FA_force_clocks.png)
 
@@ -131,7 +131,7 @@ A 2-to-1 multiplexer routes one of two inputs to its output: `y = (~s & i0) | (s
 ### Figures
 
 #### Figure 15: Behavioral 2-to-1 MUX schematic
-*Elaborated `RTL_MUX` schematic generated from the behavioral 2-to-1 multiplexer (`MUX_2x1.v`).*
+*Elaborated RTL schematic generated from the behavioral 2-to-1 multiplexer (`MUX_2x1.v`).*
 
 ![Figure 15: Behavioral 2-to-1 MUX schematic](02_Multiplexers/images/MUX_2x1_SCHEMATIC.png)
 
@@ -279,45 +279,44 @@ Unlike combinational circuits, sequential circuits include memory elements that 
 
 ### Triggering and storage elements
 
-- **Level-sensitive latch vs. edge-triggered flip-flop:** A latch is transparent while its enable level (high or low) is active and holds its value otherwise. A flip-flop samples inputs and updates state only at an active clock edge.
-- **SR latch (`sr_latch.v`):** Built from cross-coupled NOR (or NAND) gates. For an active-high NOR latch, `S=1, R=0` sets `Q=1`, `S=0, R=1` resets `Q=0`, `S=R=0` holds `Q`, and `S=R=1` is an invalid condition that drives both outputs to `0` in the NOR form.
-- **SR flip-flop (`sr_ff.v`):** Adds clock gating inside `always @(posedge clk)`. Any output assigned inside an `always` block must be declared as `output reg` (assigning to a plain wire causes a procedural assignment error).
+- **Level-sensitive latch vs. edge-triggered flip-flop:** A latch is transparent while its enable level is active and holds its value otherwise. A flip-flop samples inputs and updates state only at an active clock edge.
+- **SR latch (`sr_latch.v`):** Built from cross-coupled NOR (or NAND) gates. For an active-high NOR latch, `S=1, R=0` sets `Q=1`, `S=0, R=1` resets `Q=0`, `S=R=0` holds `Q`, and `S=R=1` is invalid because it drives both outputs to `0`.
+- **SR flip-flop (`sr_ff.v`):** Adds clock gating inside `always @(posedge clk)`. Any output assigned inside an `always` block must be declared as `output reg` (or `logic` in SystemVerilog).
 - **D flip-flop (`d_ff.v`, `d_ff_clr.v`):** The simplest flip-flop, capturing `Q <= D` on the active clock edge. `d_ff_clr.v` adds a synchronous `clear` checked on the clock edge.
-- **T flip-flop (`t_ff.v`):** Holds `Q` when `T=0` and toggles (`Q <= ~Q`) when `T=1`. Without an explicit reset or simulation initialization (`initial begin Q = 0; end`), `Q` remains unknown (`X`) during simulation.
+- **T flip-flop (`t_ff.v`):** Holds `Q` when `T=0` and toggles (`Q <= ~Q`) when `T=1`. Without an explicit reset or simulation initialization, `Q` may remain unknown (`X`) at start-up.
 - **JK flip-flop (`jk_ff.v`):** Modifies the SR flip-flop so that `J=1, K=1` toggles `Q` instead of entering an invalid state, implemented cleanly with `case({J, K})`.
 
-| Storage Element | Triggering | Key Behavior / Special Case |
+| Storage element | Triggering | Key behavior / special case |
 | :--- | :--- | :--- |
-| **SR Latch** | Level-sensitive | `S=1, R=1` is invalid; holds when `S=R=0` |
-| **SR Flip-Flop** | Edge-triggered | Clocked SR; requires `output reg`; `sr_ff.v` holds `q`/`qbar` on `S=R=1` |
-| **D Flip-Flop** | Edge-triggered | `Q(t+1) = D`; core building block for registers |
-| **T Flip-Flop** | Edge-triggered | Toggles when `T=1`; needs reset or init to avoid `X` |
-| **JK Flip-Flop** | Edge-triggered | Eliminates invalid state; toggles when `J=1, K=1` |
+| **SR latch** | Level-sensitive | `S=1, R=1` is invalid; holds when `S=R=0` |
+| **SR flip-flop** | Edge-triggered | Clocked SR; requires `output reg`; `sr_ff.v` holds `q`/`qbar` on `S=R=1` |
+| **D flip-flop** | Edge-triggered | `Q(t+1) = D`; core building block for registers |
+| **T flip-flop** | Edge-triggered | Toggles when `T=1`; needs reset or init to avoid `X` |
+| **JK flip-flop** | Edge-triggered | Eliminates invalid state; toggles when `J=1, K=1` |
 
 ### Registers and shift registers
 
 A register groups multiple flip-flops under a shared clock to store multi-bit words (`reg [3:0] Q`).
 
-- **Load and clear priority (`reg_4bit.v`, `reg_4bit_str.v`, `reg_4bit_clear.v`):** `reg_4bit_str.v` pairs each D flip-flop with a 2-to-1 MUX so `load=0` feeds back `Q` (hold) and `load=1` loads `D`. `reg_4bit_clear.v` adds synchronous clear priority on top of this behavior.
-- **I/O modes:** Registers are categorized by how data enters and exits: **SISO** (Serial-In, Serial-Out), **SIPO** (Serial-In, Parallel-Out), **PISO** (Parallel-In, Serial-Out), and **PIPO** (Parallel-In, Parallel-Out).
-- **4-bit SIPO shift register (`sipo_4bit.v`):** Shifts 1 bit of serial input (`Din`) per active clock edge; a full 4-bit parallel word (`Q[3:0]`) is available after four clock cycles. Because this implementation accomplishes serial-to-parallel conversion, it demonstrates how time-division of data can be used to widen a single-line interface.
-- **4-bit bidirectional PIPO shift register (`reg_pipo.v`):** Uses a 4-to-1 MUX (`mux_4x1_pipo`) per `d_ff_clr` flip-flop controlled by `CTRL[1:0]`:
+- **Load and clear priority (`reg_4bit.v`, `reg_4bit_str.v`, `reg_4bit_clear.v`):** `reg_4bit_str.v` pairs each D flip-flop with a 2-to-1 MUX so `load=0` feeds back `Q` (hold) and `load=1` loads `D`.
+- **I/O modes:** Registers are categorized by how data enters and exits: SISO, SIPO, PISO, and PIPO.
+- **4-bit SIPO shift register (`sipo_4bit.v`):** Shifts 1 bit of serial input (`Din`) per active clock edge; a full 4-bit parallel word (`Q[3:0]`) is available after four clock cycles.
+- **4-bit bidirectional PIPO shift register (`reg_pipo.v`):** Uses a 4-to-1 MUX to select among hold, left shift, right shift, and parallel load.
 
-| `CTRL[1:0]` | Operation | Next State Source |
+| `CTRL[1:0]` | Operation | Next-state source |
 | :--- | :--- | :--- |
 | `00` | Hold | Current `Q` |
-| `01` | Left Shift | Serial input `XL` and neighbor bits |
-| `10` | Right Shift | Serial input `XR` and neighbor bits |
-| `11` | Parallel Load | Parallel input `D[3:0]` |
+| `01` | Left shift | Serial input `XL` and neighbor bits |
+| `10` | Right shift | Serial input `XR` and neighbor bits |
+| `11` | Parallel load | Parallel input `D[3:0]` |
 
 ### Counters and patterns
 
-- **Asynchronous (ripple) counter (`counter_4_async.v`):** Each flip-flop's output clocks the next stage (typically using `J=1, K=1` toggle flip-flops). While simple to wire, accumulated propagation delay between stages makes ripple counters slower and less timing-friendly than synchronous counters.
-- **Synchronous counter:** All flip-flops share a single clock edge, providing uniform timing and fewer glitches at the cost of more complex next-state logic. Up/down direction is controlled via a `dir` or control bit and can be implemented with multiplexed next-state logic.
-- **Pattern counters (Ring and Johnson):**
-  - A **4-bit ring counter** circulates a single `1` bit through four states (`1000 -> 0100 -> 0010 -> 0001`). This concept is documented here; no separate ring-counter file is currently in the folder, but the underlying behavior is a classic sequential pattern generator.
-  - A **4-bit Johnson counter (`count_4_johnson.v`)** feeds the inverted last bit back into the shift chain (`temp = {~temp[0], temp[3:1]}`) with an asynchronous reset, cycling through eight states:
-    `0000 -> 1000 -> 1100 -> 1110 -> 1111 -> 0111 -> 0011 -> 0001 -> 0000`.
+- **Asynchronous (ripple) counter (`counter_4_async.v`):** Each flip-flop’s output clocks the next stage. While simple to wire, accumulated propagation delay makes ripple counters slower and less timing-friendly than synchronous counters.
+- **Synchronous counter:** All flip-flops share a single clock edge, providing uniform timing and fewer glitches at the cost of more complex next-state logic.
+- **Pattern counters (ring and Johnson):**
+  - A 4-bit ring counter circulates a single `1` bit through four states (`1000 -> 0100 -> 0010 -> 0001`). This concept is documented here; no separate ring-counter file exists in this folder.
+  - A 4-bit Johnson counter (`count_4_johnson.v`) feeds the inverted last bit back into the shift chain, cycling through eight states.
 
 ### Figures
 
@@ -427,17 +426,17 @@ A register groups multiple flip-flops under a shared clock to store multi-bit wo
 ![Figure 55: 4-bit SIPO shift register RTL schematic](06_Sequential_Logic_Basics/images/12_sipo_4bit_sch.png)
 
 #### Figure 56: 4-bit SIPO shift register simulation waveform
-*Simulation waveform showing `Din` shifting across four clock edges (`XXX1` -> `XX11` -> `X111` -> `1111`) until `Q[3:0]` is full.*
+*Simulation waveform showing `Din` shifting across four clock edges (`XXX1 -> XX11 -> X111 -> 1111`) until `Q[3:0]` is full.*
 
 ![Figure 56: 4-bit SIPO shift register simulation waveform](06_Sequential_Logic_Basics/images/12_sipo_4bit_waveform.png)
 
 #### Figure 57: 4-bit asynchronous (ripple) counter RTL schematic
-*Elaborated schematic of `counter_4_async.v` where each stage's output ripples into the next stage's clock.*
+*Elaborated schematic of `counter_4_async.v` where each stage’s output ripples into the next stage’s clock.*
 
 ![Figure 57: 4-bit asynchronous (ripple) counter RTL schematic](06_Sequential_Logic_Basics/images/13_counter_4_async_sch.png)
 
 #### Figure 58: 4-bit asynchronous (ripple) counter simulation waveform
-*Simulation waveform of `counter_4_async.v` counting upward (`0` to `15`) using falling-edge (`negedge`) ripple triggers across all four stages.*
+*Simulation waveform of `counter_4_async.v` counting upward (`0` to `15`) using falling-edge ripple triggers across all four stages.*
 
 ![Figure 58: 4-bit asynchronous (ripple) counter simulation waveform](06_Sequential_Logic_Basics/images/13_counter_4_async_waveform.png)
 
@@ -460,28 +459,28 @@ Effective debugging starts with reproducing the issue and identifying its stage:
 ### Effective debugging practices
 
 - **Isolate the context:** Record the exact error message, tool and version (Vivado or ModelSim), affected module and port names, vector widths, and clock/reset conditions.
-- **Trace `X` values:** Unknown states in waveforms usually indicate uninitialized registers, missing reset assertions, multi-driver conflicts, or incomplete testbench stimulus.
-- **Write actionable problem reports:** Provide the exact diagnostic text, tool name, and the minimal module plus testbench code rather than vague descriptions like *"my code is not working."*
+- **Trace `X` values:** Unknown states in waveforms often indicate uninitialized registers, missing reset assertions, multi-driver conflicts, or incomplete testbench stimulus.
+- **Write actionable problem reports:** Provide the exact diagnostic text, tool name, and the minimal module plus testbench code rather than vague descriptions like “my code is not working.”
 
 ### Synthesizable RTL guidelines
 
-Synthesizable RTL describes logic that synthesis tools (such as Vivado or Quartus) can map onto physical gates, multiplexers, and flip-flops:
+Synthesizable RTL describes logic that synthesis tools such as Vivado or Quartus can map onto physical gates, multiplexers, and flip-flops:
 
-- Use **nonblocking assignments (`<=`)** for sequential state updates and **blocking assignments (`=`)** for combinational calculations.
+- Use nonblocking assignments (`<=`) for sequential state updates and blocking assignments (`=`) for combinational calculations.
 - Assign all outputs on every path in combinational `always @*` blocks to avoid unintended latch inference.
 - Keep sensitivity lists complete (`always @*` in Verilog or `always_comb` in SystemVerilog).
 - Describe reset behavior explicitly and consistently (synchronous or asynchronous, active-high or active-low).
 - Keep simulation-only constructs—such as `#` delays, `forever` loops, `wait` statements, file I/O, and `real` data types—out of RTL modules and inside testbenches.
-- Avoid `initial` blocks in portable ASIC RTL (FPGA tools may support them for certain resources, depending on device and flow).
-- Inspect **synthesis warnings** as well as errors; warnings frequently reveal inferred latches, undriven nets, width mismatches, or trimmed logic.
+- Avoid `initial` blocks in portable ASIC RTL; FPGA tools may support them for certain resources, depending on device and flow.
+- Inspect synthesis warnings as well as errors; warnings frequently reveal inferred latches, undriven nets, width mismatches, or trimmed logic.
 
 ### Synthesizability checklist
 
 1. Remove `#` delays and simulation-only tasks from synthesizable RTL files.
 2. Confirm combinational blocks assign every output on all paths and sequential blocks trigger on the intended clock edge.
 3. Verify reset polarity, synchronous/asynchronous behavior, and priority relative to control signals like `load`.
-4. Check port directions and vector widths across all module instantiations.
-5. Run synthesis in Vivado or Quartus and review all warnings alongside errors.
+4. Check port directions and vector widths across module instantiations.
+5. Run synthesis in Vivado or Quartus and review warnings alongside errors.
 
 Note: `07_Verilog_Debugging/` currently contains documentation rather than standalone design or testbench files.
 
@@ -489,26 +488,30 @@ Note: `07_Verilog_Debugging/` currently contains documentation rather than stand
 
 ## 8. Finite state machines — `08_Finite_State_Machines/`
 
-A Finite State Machine (FSM) describes the sequence of steps taken by a digital system. The system transitions between a finite number of conditions (states) based on incoming inputs and internal timing. FSMs are central to control logic such as protocol handlers, sequencers, and state-driven controllers.
+A Finite State Machine (FSM) describes the sequence of steps taken by a digital system. The system transitions between a finite number of conditions (states) based on incoming inputs and internal timing.
 
-FSMs are categorized into two primary types based on how outputs are generated:
-- **Moore Machine:** The output depends strictly on the current state.
-- **Mealy Machine:** The output depends on both the current state and the current input values.
+FSMs are usually categorized as:
 
-To ensure synthesizability and avoid simulation hazards, all FSMs in this repository are modeled using the standard 3-block architecture:
-1. **State Register:** A sequential `always @(posedge clk)` block that updates `state <= next_state`.
-2. **Next-State Logic:** A combinational `always @*` block using a complete `case` statement to determine transitions.
-3. **Output Logic:** A combinational `always @*` block driving outputs based on `state` (Moore) or `state` and inputs (Mealy).
+- **Moore machine:** The output depends strictly on the current state.
+- **Mealy machine:** The output depends on both the current state and the current input values.
 
-### FSM Counters
-Counters can be modeled explicitly as state machines rather than simple arithmetic adders.
-- **Enabled Counter (`fsm_counter.v`):** Cycles through states `S0` to `S3` only when the `din` (enable) signal is asserted.
-- **Up/Down Counter (`fsm_up_down_count.v`):** A 4-state machine where `dir = 0` triggers upward counting transitions and `dir = 1` triggers downward counting transitions.
+To ensure synthesizability and avoid simulation hazards, all FSMs in this repository are modeled using a standard three-block architecture:
 
-### Pattern Detectors
-A pattern detector monitors a running serial bitstream to recognize a specific sequence (e.g., `1011`).
-- **Moore Implementation (`fsm_pattern_moore.v`):** Requires 5 distinct states (`Sin`, `S1`, `S10`, `S101`, `S1011`) to detect the 4-bit `1011` sequence because the output must be mapped to a dedicated state.
-- **Mealy Implementation (`fsm_pattern_mealy.v`):** Requires only 4 states (`Sin`, `S1`, `S10`, `S101`). The output is asserted dynamically during the transition from the final state while the input matches the expected next bit.
+1. **State register:** A sequential `always @(posedge clk)` block that updates `state <= next_state`.
+2. **Next-state logic:** A combinational `always @*` block using a complete `case` statement to determine transitions.
+3. **Output logic:** A combinational `always @*` block driving outputs based on `state` (Moore) or `state` and inputs (Mealy).
+
+### FSM counters
+
+- **Enabled counter (`fsm_counter.v`):** Cycles through states `S0` to `S3` only when the `din` (enable) signal is asserted.
+- **Up/down counter (`fsm_up_down_count.v`):** A 4-state machine where `dir = 0` triggers upward counting and `dir = 1` triggers downward counting.
+
+### Pattern detectors
+
+A pattern detector monitors a running serial bitstream to recognize a specific sequence such as `1011`.
+
+- **Moore implementation (`fsm_pattern_moore.v`):** Requires 5 distinct states (`Sin`, `S1`, `S10`, `S101`, `S1011`) to detect the 4-bit `1011` sequence because the output must be mapped to a dedicated state.
+- **Mealy implementation (`fsm_pattern_mealy.v`):** Requires only 4 states (`Sin`, `S1`, `S10`, `S101`). The output is asserted dynamically during the transition from the final state while the input matches the expected next bit.
 
 ### Figures
 
@@ -522,15 +525,15 @@ A pattern detector monitors a running serial bitstream to recognize a specific s
 
 ![Figure 62: FSM counter simulation waveform](08_Finite_State_Machines/images/01_fsm_counter_waveform.png)
 
-#### Figure 63: Up/Down counter FSM RTL schematic
+#### Figure 63: Up/down counter FSM RTL schematic
 *Elaborated schematic of `fsm_up_down_count.v` driven by the `dir` control signal.*
 
-![Figure 63: Up/Down counter FSM RTL schematic](08_Finite_State_Machines/images/02_fsm_up_down_count_sch.png)
+![Figure 63: Up/down counter FSM RTL schematic](08_Finite_State_Machines/images/02_fsm_up_down_count_sch.png)
 
-#### Figure 64: Up/Down counter FSM simulation waveform
+#### Figure 64: Up/down counter FSM simulation waveform
 *Simulation waveform verifying directional changes when `dir` toggles between `0` and `1`.*
 
-![Figure 64: Up/Down counter FSM simulation waveform](08_Finite_State_Machines/images/02_fsm_up_down_count_waveform.png)
+![Figure 64: Up/down counter FSM simulation waveform](08_Finite_State_Machines/images/02_fsm_up_down_count_waveform.png)
 
 #### Figure 65: Moore pattern detector RTL schematic
 *Elaborated schematic of `fsm_pattern_moore.v` demonstrating the 5-state logic architecture.*
@@ -552,67 +555,71 @@ A pattern detector monitors a running serial bitstream to recognize a specific s
 
 ![Figure 68: Mealy pattern detector simulation waveform](08_Finite_State_Machines/images/04_fsm_pattern_mealy_waveform.png)
 
+---
+
 ## 9. FPGA architecture and implementation flow — `09_FPGA_Implementation_Basics/`
 
-Field Programmable Gate Arrays (FPGAs) are reconfigurable semiconductor devices that let one hardware board act like different digital circuits over time—for example, a half adder, a counter, or a custom state machine. Unlike CPUs that execute instructions sequentially, FPGAs configure physical logic circuits directly, making them useful for parallel hardware acceleration, fast prototyping, pre-fabrication testing, and applications such as DSP/FFT, GPS, security, and embedded vision systems.
+Field Programmable Gate Arrays (FPGAs) are reconfigurable semiconductor devices that let one hardware board act like different digital circuits over time. For example, a half adder, a counter, or a custom state machine can all be implemented on the same FPGA by loading different configuration data.
 
-### FPGA architecture (`M601`)
+### FPGA architecture
 
-- **Configurable Logic Block (CLB):** The core logic tile inside the FPGA. Each CLB contains **6-input Look-Up Tables (LUTs)** (small memory-based truth tables that realize combinational functions), **Flip-Flops (FFs)**, and **latches** for sequential state.
+- **Configurable Logic Block (CLB):** The core logic tile inside the FPGA. Each CLB contains 6-input look-up tables (LUTs), small memory-based truth tables that realize combinational functions, along with flip-flops and routing resources.
 - **Programmable interconnects:** The routing matrix that wires CLBs and I/O blocks together across the chip.
-- **I/O blocks:** Interface internal FPGA routing to physical pins on the board (switches, LEDs, 7-segment displays, and Pmod headers).
+- **I/O blocks:** Interface internal FPGA routing to physical pins on the board, including switches, LEDs, 7-segment displays, and Pmod headers.
 
-### Constraints file generation (`M602`)
+### Constraints file generation
 
-Every physical component on the Basys 3 board has a fixed package pin code and voltage standard (`IOSTANDARD LVCMOS33` for 3.3V CMOS logic):
+Every physical component on the Basys 3 board has a fixed package pin code and voltage standard (`IOSTANDARD LVCMOS33` for 3.3 V CMOS logic):
 
 - **Start from the master template:** Download the official board template (`Basys3_Master.xdc`), where all pins are commented out with `#`.
-- **Map only active ports:** Uncomment the lines for the components your design uses (`HA_data_basys.xdc`, `RCA_7_seg.xdc`), replace the placeholder port names inside `get_ports {...}` with your exact Verilog port names, and leave all unused lines commented out.
-- **One active `.xdc` rule:** A Vivado project can store multiple `.xdc` files, but **only one constraints file should be active** for synthesis and implementation (disable any others).
-- **Target device selection:** Before running synthesis, set the Vivado project part to match the Basys 3 Artix-7 device: **`xc7a35tcpg236-1`** (General Purpose, Artix-7, package `cpg236`, speed grade `-1`).
+- **Map only active ports:** Uncomment the lines for the components your design uses, replace the placeholder port names inside `get_ports {...}` with your actual Verilog port names, and leave all unused lines commented out.
+- **One active `.xdc` rule:** A Vivado project can store multiple `.xdc` files, but only one constraints file should be active for synthesis and implementation.
+- **Target device selection:** Before running synthesis, set the Vivado project part to match the Basys 3 Artix-7 device: `xc7a35tcpg236-1`.
 
-### Vivado hardware implementation flow (`M603`–`M606`)
+### Vivado hardware implementation flow
 
-1. **Pre-check (Simulation first):** Verify RTL syntax and functional waveforms in behavioral simulation before moving to hardware steps.
-2. **Synthesis (`M603`):** Translates Verilog RTL into logic gates and maps them onto the target FPGA's CLBs and LUTs using the active `.xdc`. Produces a post-synthesis schematic (closer to physical hardware) along with estimated resource utilization and power reports.
-3. **Implementation (`M603`):** Places logic onto physical CLB sites and routes programmable interconnects using the same active `.xdc` and board. Produces the **Device/Package** pin-mapping view, post-implementation schematic, timing summary (WNS/TNS), DRC checks, and detailed utilization (`FF`, `LUT`, `I/O`, `BRAM`, `DSP`) and dynamic/static power breakdowns.
-4. **Bitstream generation (`M604`):** Compiles the routed design into `<ModuleName>.bit` (such as `HA_gate.bit`, located under `<project>.runs/impl_<N>/`), encoding all pin, LUT, and display configurations. Ensure the right board is selected, follow module naming rules, and avoid spaces or special characters in the project path.
-5. **Hardware Manager and testing (`M605`–`M606`):** Connect the Basys 3 over USB (allowing drivers to install on first connection), open **Hardware Manager**, and run **Open Target -> Auto Connect** to detect `xc7a35t_0`. Click **Program Device** and load the `.bit` file (a compiled `.bit` file can also be shared and programmed directly onto another Basys 3 without re-synthesizing). Once `HA_gate.bit` is loaded, switches `SW0` (`V17`) and `SW1` (`V16`) drive `a` and `b`, while `LD0` (`U16`) and `LD1` (`E19`) display `sum` and `carry`.
+1. **Pre-check (simulation first):** Verify RTL syntax and functional waveforms in behavioral simulation before moving to hardware steps.
+2. **Synthesis:** Translates Verilog RTL into logic gates and maps them onto the target FPGA’s CLBs and LUTs using the active `.xdc`. Produces a post-synthesis schematic and resource estimates.
+3. **Implementation:** Places logic onto physical CLB sites and routes programmable interconnects using the same active `.xdc` and board. Produces the device/package pin-mapping view, timing summary, and utilization report.
+4. **Bitstream generation:** Compiles the routed design into `<ModuleName>.bit`, encoding all pin, LUT, and display configurations.
+5. **Hardware manager and testing:** Connect the Basys 3 over USB, open Hardware Manager, and program the `.bit` file onto the device. This is the stage where the design is proven on real hardware.
 
-### 7-segment display interfacing (`M607`, `RCA_4_bit_7seg.v`)
+### 7-segment display interfacing
 
 A 7-segment display contains seven LEDs (`a`–`g`) plus a decimal point (`DP`) wired across 10 pins, with pins 3 and 8 tied together as the common terminal.
 
-- **Common-anode (Basys 3):** Because the Basys 3 uses a common-anode display, both the segment lines (`seg[6:0]`) and the 4-digit anode enables (`an[3:0]`) are **active-low** (`0` turns a segment or digit ON; `1` turns it OFF).
-- **Digit selection and decoding:** `RCA_4_bit_7seg.v` sets `an = 4'b1110` to activate only the rightmost digit, computes the 4-bit sum `S[3:0]` and `Cout` (`LD0`) across four `FA_data` stages, and uses a `case (S)` block to map hex values `0` through `F` onto `seg[6:0]` (with `seg[0]` driving segment `a` and `seg[6]` driving segment `g`).
+- **Common-anode (Basys 3):** Because the Basys 3 uses a common-anode display, both the segment lines (`seg[6:0]`) and the 4-digit anode enables (`an[3:0]`) are active-low. `0` turns a segment or digit ON; `1` turns it OFF.
+- **Digit selection and decoding:** `RCA_4_bit_7seg.v` sets `an = 4'b1110` to activate only the rightmost digit, computes the 4-bit sum `S[3:0]` and `Cout` across four `FA_data` stages, and uses a `case` block to map the count value onto the active-low pattern for `seg[6:0]`.
 
-## 10. RTL Mini-Projects — `10_RTL_Mini_Projects/`
+---
 
-This section applies combinational datapaths, 7-segment display encoding, and multi-state FSM design to three self-contained hardware systems. It also extends the Vivado workflow from basic behavioral simulation into hardware-targeted constraints and post-synthesis/implementation checks.
+## 10. RTL mini-projects — `10_RTL_Mini_Projects/`
 
-### 10.1 Car Parking Management System (`Car_parking.v`, `Car_parking_7_seg.v`)
+This section applies combinational datapaths, 7-segment display encoding, and multi-state FSM design to three self-contained hardware systems. It also extends the Vivado workflow from basic behavioral simulation into hardware-targeted constraints and post-synthesis checks.
+
+### 10.1 Car parking management system (`Car_parking.v`, `Car_parking_7_seg.v`)
 
 Each parking slot is represented by a 1-bit sensor input (`Cars[7:0]`), where logic `1` indicates an occupied space. A combinational `always @*` block sums all eight sensor bits into a 4-bit count (`num`), allowing simulation waveforms to display the occupied count directly as an unsigned decimal value.
 
-For FPGA deployment on the **Nexys 4 DDR** (`Car_parking_Nexys.xdc`), `Car_parking_7_seg.v` maps `Cars[7:0]` to physical switches (`SW[7:0]`) and drives the rightmost common-anode 7-segment digit (`AN = 8'b11111110`, active-low). A `case(num)` lookup converts counts `0` through `8` into active-low segment patterns (`seg[6:0]`), with a `default` assignment to prevent unintended latch inference.
+For FPGA deployment on the Nexys 4 DDR (`Car_parking_Nexys.xdc`), `Car_parking_7_seg.v` maps `Cars[7:0]` to physical switches (`SW[7:0]`) and drives the rightmost common-anode 7-segment digit. A `case(num)` lookup converts counts `0` through `8` into active-low segment patterns (`seg[6:0]`), with a `default` assignment to prevent unintended latch inference.
 
-### 10.2 Vending Machine Controller (`Vending_machine.v`)
+### 10.2 Vending machine controller (`Vending_machine.v`)
 
 The vending machine is structured as a 9-state FSM (`Sin` through `S80`) tracking cumulative inserted value toward a 40-unit product price. On each `posedge clk`, the machine samples a 2-bit `coin` input (`ten = 2'b00`, `twenty = 2'b01`, `fifty = 2'b10`) and advances to the corresponding sum state, while an active-high `reset` returns it to `Sin`.
 
 - **Dispense and change logic:** States `Sin`–`S30` keep `Z = 0` and `change_given = 0`. Reaching `S40` asserts `Z = 1` with no change (`change_given = 0`), while `S50`–`S80` assert both `Z = 1` and `change_given = 1` before returning unconditionally to `Sin` on the next clock cycle.
 - **Stimulus timing:** Inputs must be updated before the rising clock edge so the same currency note is not sampled twice across consecutive cycles.
 
-### 10.3 4-Way Traffic Light Controller (`Traffic_sys.v`)
+### 10.3 4-way traffic light controller (`Traffic_sys.v`)
 
-The intersection controller uses an 8-state FSM rotating through `north`, `west`, `south`, and `east`, with dedicated yellow transition states between each green phase. Each direction uses a 3-bit output (`3'b001` = Green, `3'b010` = Yellow, `3'b100` = Red) so only one road moves at a time.
+The intersection controller uses an 8-state FSM rotating through `north`, `west`, `south`, and `east`, with dedicated yellow transition states between each green phase. Each direction uses a 3-bit output (`2'b001` = Green, `2'b010` = Yellow, `2'b100` = Red) so only one road moves at a time.
 
 - **Scaled timing counter:** A 4-bit register `count` holds each green state for 16 clock cycles (`4'b1111`) and each yellow state for 4 clock cycles (`4'b0011`), scaling a 30 s / 5 s real-world timing ratio down for practical waveform inspection.
 - **Emergency reset:** Asserting `reset` immediately forces `state` back to `north` and clears `count` to zero.
 
-### 10.4 Verification and Implementation Notes
+### 10.4 Verification and implementation notes
 
-Following Xilinx Vivado simulation and power-analysis practices, these projects are verified by running behavioral simulation (`xsim`) across full state rotations and randomized sensor inputs before moving to synthesis and implementation. When targeting hardware, keeping a single active `.xdc` file per project and reviewing post-implementation utilization and timing/power reports ensures clean pin mapping and predictable switching behavior.
+Following Xilinx Vivado simulation and power-analysis practices, these projects are verified by running behavioral simulation across full state rotations and randomized sensor inputs before moving to synthesis and implementation. When targeting hardware, keeping a single active `.xdc` file per project and reviewing post-implementation utilization and timing reports ensures clean pin mapping and predictable switching behavior.
 
 ### Figures
 
@@ -621,27 +628,28 @@ Following Xilinx Vivado simulation and power-analysis practices, these projects 
 #### Figure XX: Car parking system behavioral simulation
 *Simulation waveform showing `Cars[7:0]` sensor combinations and the corresponding `num[3:0]` count.*
 
-[10_RTL_Mini_Projects/images/car_parking_sim.png]
+![Figure XX: Car parking system behavioral simulation](10_RTL_Mini_Projects/images/car_parking_sim.png)
 
 #### Figure XX+1: Car parking 7-segment RTL schematic
 *Elaborated schematic of `Car_parking_7_seg` driving `seg[6:0]` and `AN[7:0]` for Nexys 4 DDR.*
 
-[10_RTL_Mini_Projects/images/car_parking_7seg_schematic.png]
+![Figure XX+1: Car parking 7-segment RTL schematic](10_RTL_Mini_Projects/images/car_parking_7seg_schematic.png)
 
 #### Figure XX+2: Vending machine FSM simulation
 *Waveform verifying `Sin`–`S80` state transitions, product dispense (`Z`), and change return (`change_given`).*
 
-[10_RTL_Mini_Projects/images/vending_machine_sim.png]
+![Figure XX+2: Vending machine FSM simulation](10_RTL_Mini_Projects/images/vending_machine_sim.png)
 
 #### Figure XX+3: 4-way traffic controller simulation
 *Waveform showing full 4-direction green/yellow/red rotation and `reset` recovery.*
 
-[10_RTL_Mini_Projects/images/traffic_sys_sim.png]
+![Figure XX+3: 4-way traffic controller simulation](10_RTL_Mini_Projects/images/traffic_sys_sim.png)
 
 ## Scope and next work
 
-<<<<<<< HEAD
 This repository covers combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, finite-state machines, Basys 3 FPGA implementation, and applied RTL mini-projects. Future additions can expand into parameterized/reusable modules, automated self-checking testbenches, and post-implementation timing and power analysis in Vivado.
-=======
-This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practice. It also includes finite-state control design, where a system's behavior is modeled as a set of state transitions instead of a purely arithmetic function. The next logical extension is to add more complex FSMs, protocol controllers, and datapath-driven designs that combine control sequencing with arithmetic blocks.
->>>>>>> 37781a398e5aa1d127df8d5d42fbd405c40f69a8
+
+This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practice. It also includes finite-state control design, where a system’s behavior is modeled as a set of state transitions instead of a purely arithmetic function. The next logical extension is to add more complex FSMs, protocol controllers, and datapath-driven designs that combine control sequencing with arithmetic blocks.
+
+---
+
