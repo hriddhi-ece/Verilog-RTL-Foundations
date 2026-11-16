@@ -23,6 +23,8 @@ The goal is to build hardware intuition: Verilog RTL describes logic that can be
 - [`06_Sequential_Logic_Basics/`](./06_Sequential_Logic_Basics/) — SR latch, D/T/JK flip-flops, shift registers, and basic counters.
 - [`07_Verilog_Debugging/`](./07_Verilog_Debugging/) — Guidelines for debugging, simulation tracking, and writing synthesizable RTL.
 - [`08_Finite_State_Machines/`](./08_Finite_State_Machines/) — Moore and Mealy FSMs for counters and pattern detection.
+- [`09_FPGA_Implementation_Basics/`](./09_FPGA_Implementation_Basics/) — Basys 3 XDC constraints, Half Adder bitstream, and 4-bit RCA with 7-segment display.
+| [`10_RTL_Mini_Projects/`](10_RTL_Mini_Projects/) | Applied Verilog mini-projects: 8-slot car parking counter with Nexys 4 DDR 7-segment display, FSM vending machine, and 4-way traffic light controller. |
 - [`LEARNING_LOG.md`](./LEARNING_LOG.md) — Explanations of the RTL concepts and figures demonstrated by the examples.
 
 ## Verification

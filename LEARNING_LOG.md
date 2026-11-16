@@ -4,16 +4,18 @@ This log connects the circuits in this repository to the RTL concepts they demon
 
 ## Table of Contents
 
-1. [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
-2. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
-3. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
-4. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
-5. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
-6. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
-7. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
-8. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
-9. [Finite state machines — `08_Finite_State_Machines/`](#8-finite-state-machines--08_finite_state_machines)
-10. [Scope and next work](#scope-and-next-work)
+ [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
+1. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
+2. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
+3. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
+4. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
+5. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
+6. [Sequential logic, registers, and counters — `06_Sequential_Logic_Basics/`](#6-sequential-logic-registers-and-counters--06_sequential_logic_basics)
+7. [Verilog debugging and synthesizable RTL — `07_Verilog_Debugging/`](#7-verilog-debugging-and-synthesizable-rtl--07_verilog_debugging)
+8. [Finite state machines — `08_Finite_State_Machines/`](#8-finite-state-machines--08_finite_state_machines)
+9. [FPGA architecture and implementation flow — `09_FPGA_Implementation_Basics/`](#9-fpga-architecture-and-implementation-flow--09_fpga_implementation_basics)
+10. [RTL Mini-Projects — `10_RTL_Mini_Projects/`](#10-rtl-mini-projects--10_rtl_mini_projects)
+[Scope and next work](#scope-and-next-work)
 
 ---
 
@@ -552,6 +554,92 @@ A pattern detector monitors a running serial bitstream to recognize a specific s
 
 ![Figure 68: Mealy pattern detector simulation waveform](08_Finite_State_Machines/images/04_fsm_pattern_mealy_waveform.png)
 
+## 9. FPGA architecture and implementation flow — `09_FPGA_Implementation_Basics/`
+
+Field Programmable Gate Arrays (FPGAs) are reconfigurable semiconductor devices that let one hardware board act like different digital circuits over time—for example, a half adder, a counter, or a custom state machine. Unlike CPUs that execute instructions sequentially, FPGAs configure physical logic circuits directly, making them useful for parallel hardware acceleration, fast prototyping, pre-fabrication testing, and applications such as DSP/FFT, GPS, security, and embedded vision systems.
+
+### FPGA architecture (`M601`)
+
+- **Configurable Logic Block (CLB):** The core logic tile inside the FPGA. Each CLB contains **6-input Look-Up Tables (LUTs)** (small memory-based truth tables that realize combinational functions), **Flip-Flops (FFs)**, and **latches** for sequential state.
+- **Programmable interconnects:** The routing matrix that wires CLBs and I/O blocks together across the chip.
+- **I/O blocks:** Interface internal FPGA routing to physical pins on the board (switches, LEDs, 7-segment displays, and Pmod headers).
+
+### Constraints file generation (`M602`)
+
+Every physical component on the Basys 3 board has a fixed package pin code and voltage standard (`IOSTANDARD LVCMOS33` for 3.3V CMOS logic):
+
+- **Start from the master template:** Download the official board template (`Basys3_Master.xdc`), where all pins are commented out with `#`.
+- **Map only active ports:** Uncomment the lines for the components your design uses (`HA_data_basys.xdc`, `RCA_7_seg.xdc`), replace the placeholder port names inside `get_ports {...}` with your exact Verilog port names, and leave all unused lines commented out.
+- **One active `.xdc` rule:** A Vivado project can store multiple `.xdc` files, but **only one constraints file should be active** for synthesis and implementation (disable any others).
+- **Target device selection:** Before running synthesis, set the Vivado project part to match the Basys 3 Artix-7 device: **`xc7a35tcpg236-1`** (General Purpose, Artix-7, package `cpg236`, speed grade `-1`).
+
+### Vivado hardware implementation flow (`M603`–`M606`)
+
+1. **Pre-check (Simulation first):** Verify RTL syntax and functional waveforms in behavioral simulation before moving to hardware steps.
+2. **Synthesis (`M603`):** Translates Verilog RTL into logic gates and maps them onto the target FPGA's CLBs and LUTs using the active `.xdc`. Produces a post-synthesis schematic (closer to physical hardware) along with estimated resource utilization and power reports.
+3. **Implementation (`M603`):** Places logic onto physical CLB sites and routes programmable interconnects using the same active `.xdc` and board. Produces the **Device/Package** pin-mapping view, post-implementation schematic, timing summary (WNS/TNS), DRC checks, and detailed utilization (`FF`, `LUT`, `I/O`, `BRAM`, `DSP`) and dynamic/static power breakdowns.
+4. **Bitstream generation (`M604`):** Compiles the routed design into `<ModuleName>.bit` (such as `HA_gate.bit`, located under `<project>.runs/impl_<N>/`), encoding all pin, LUT, and display configurations. Ensure the right board is selected, follow module naming rules, and avoid spaces or special characters in the project path.
+5. **Hardware Manager and testing (`M605`–`M606`):** Connect the Basys 3 over USB (allowing drivers to install on first connection), open **Hardware Manager**, and run **Open Target -> Auto Connect** to detect `xc7a35t_0`. Click **Program Device** and load the `.bit` file (a compiled `.bit` file can also be shared and programmed directly onto another Basys 3 without re-synthesizing). Once `HA_gate.bit` is loaded, switches `SW0` (`V17`) and `SW1` (`V16`) drive `a` and `b`, while `LD0` (`U16`) and `LD1` (`E19`) display `sum` and `carry`.
+
+### 7-segment display interfacing (`M607`, `RCA_4_bit_7seg.v`)
+
+A 7-segment display contains seven LEDs (`a`–`g`) plus a decimal point (`DP`) wired across 10 pins, with pins 3 and 8 tied together as the common terminal.
+
+- **Common-anode (Basys 3):** Because the Basys 3 uses a common-anode display, both the segment lines (`seg[6:0]`) and the 4-digit anode enables (`an[3:0]`) are **active-low** (`0` turns a segment or digit ON; `1` turns it OFF).
+- **Digit selection and decoding:** `RCA_4_bit_7seg.v` sets `an = 4'b1110` to activate only the rightmost digit, computes the 4-bit sum `S[3:0]` and `Cout` (`LD0`) across four `FA_data` stages, and uses a `case (S)` block to map hex values `0` through `F` onto `seg[6:0]` (with `seg[0]` driving segment `a` and `seg[6]` driving segment `g`).
+
+## 10. RTL Mini-Projects — `10_RTL_Mini_Projects/`
+
+This section applies combinational datapaths, 7-segment display encoding, and multi-state FSM design to three self-contained hardware systems. It also extends the Vivado workflow from basic behavioral simulation into hardware-targeted constraints and post-synthesis/implementation checks.
+
+### 10.1 Car Parking Management System (`Car_parking.v`, `Car_parking_7_seg.v`)
+
+Each parking slot is represented by a 1-bit sensor input (`Cars[7:0]`), where logic `1` indicates an occupied space. A combinational `always @*` block sums all eight sensor bits into a 4-bit count (`num`), allowing simulation waveforms to display the occupied count directly as an unsigned decimal value.
+
+For FPGA deployment on the **Nexys 4 DDR** (`Car_parking_Nexys.xdc`), `Car_parking_7_seg.v` maps `Cars[7:0]` to physical switches (`SW[7:0]`) and drives the rightmost common-anode 7-segment digit (`AN = 8'b11111110`, active-low). A `case(num)` lookup converts counts `0` through `8` into active-low segment patterns (`seg[6:0]`), with a `default` assignment to prevent unintended latch inference.
+
+### 10.2 Vending Machine Controller (`Vending_machine.v`)
+
+The vending machine is structured as a 9-state FSM (`Sin` through `S80`) tracking cumulative inserted value toward a 40-unit product price. On each `posedge clk`, the machine samples a 2-bit `coin` input (`ten = 2'b00`, `twenty = 2'b01`, `fifty = 2'b10`) and advances to the corresponding sum state, while an active-high `reset` returns it to `Sin`.
+
+- **Dispense and change logic:** States `Sin`–`S30` keep `Z = 0` and `change_given = 0`. Reaching `S40` asserts `Z = 1` with no change (`change_given = 0`), while `S50`–`S80` assert both `Z = 1` and `change_given = 1` before returning unconditionally to `Sin` on the next clock cycle.
+- **Stimulus timing:** Inputs must be updated before the rising clock edge so the same currency note is not sampled twice across consecutive cycles.
+
+### 10.3 4-Way Traffic Light Controller (`Traffic_sys.v`)
+
+The intersection controller uses an 8-state FSM rotating through `north`, `west`, `south`, and `east`, with dedicated yellow transition states between each green phase. Each direction uses a 3-bit output (`3'b001` = Green, `3'b010` = Yellow, `3'b100` = Red) so only one road moves at a time.
+
+- **Scaled timing counter:** A 4-bit register `count` holds each green state for 16 clock cycles (`4'b1111`) and each yellow state for 4 clock cycles (`4'b0011`), scaling a 30 s / 5 s real-world timing ratio down for practical waveform inspection.
+- **Emergency reset:** Asserting `reset` immediately forces `state` back to `north` and clears `count` to zero.
+
+### 10.4 Verification and Implementation Notes
+
+Following Xilinx Vivado simulation and power-analysis practices, these projects are verified by running behavioral simulation (`xsim`) across full state rotations and randomized sensor inputs before moving to synthesis and implementation. When targeting hardware, keeping a single active `.xdc` file per project and reviewing post-implementation utilization and timing/power reports ensures clean pin mapping and predictable switching behavior.
+
+### Figures
+
+*(Drop your Vivado screenshots into `10_RTL_Mini_Projects/images/` with matching filenames once simulated/implemented.)*
+
+#### Figure XX: Car parking system behavioral simulation
+*Simulation waveform showing `Cars[7:0]` sensor combinations and the corresponding `num[3:0]` count.*
+
+[10_RTL_Mini_Projects/images/car_parking_sim.png]
+
+#### Figure XX+1: Car parking 7-segment RTL schematic
+*Elaborated schematic of `Car_parking_7_seg` driving `seg[6:0]` and `AN[7:0]` for Nexys 4 DDR.*
+
+[10_RTL_Mini_Projects/images/car_parking_7seg_schematic.png]
+
+#### Figure XX+2: Vending machine FSM simulation
+*Waveform verifying `Sin`–`S80` state transitions, product dispense (`Z`), and change return (`change_given`).*
+
+[10_RTL_Mini_Projects/images/vending_machine_sim.png]
+
+#### Figure XX+3: 4-way traffic controller simulation
+*Waveform showing full 4-direction green/yellow/red rotation and `reset` recovery.*
+
+[10_RTL_Mini_Projects/images/traffic_sys_sim.png]
+
 ## Scope and next work
 
-This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practices. Natural next steps include adding self-checking testbenches with automated pass/fail checks, implementing a synchronous up/down counter module, exploring finite-state machines (FSMs), and running synthesis and timing analysis exercises.
+This repository covers combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, finite-state machines, Basys 3 FPGA implementation, and applied RTL mini-projects. Future additions can expand into parameterized/reusable modules, automated self-checking testbenches, and post-implementation timing and power analysis in Vivado.
