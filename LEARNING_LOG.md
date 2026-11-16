@@ -483,7 +483,6 @@ Synthesizable RTL describes logic that synthesis tools (such as Vivado or Quartu
 Note: `07_Verilog_Debugging/` currently contains documentation rather than standalone design or testbench files.
 
 ---
-
 ## Scope and next work
 
 This repository now spans combinational arithmetic, multiplexing, decoding, code conversion, and comparison alongside sequential storage elements, shift registers, counters, and synthesizable RTL practices. Natural next steps include adding self-checking testbenches with automated pass/fail checks, implementing a synchronous up/down counter module, exploring finite-state machines (FSMs), and running synthesis and timing analysis exercises.
