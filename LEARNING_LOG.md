@@ -2,6 +2,15 @@
 
 This log connects the circuits in this repository to the RTL concepts they demonstrate. The examples are small combinational designs: their outputs depend on the current inputs, with no clocked state.
 
+## Table of Contents
+1. [VLSI, FPGA, and RTL](#vlsi-fpga-and-rtl)
+2. [Adders — `01_Adders_basics/`](#1-adders--01_adders_basics)
+3. [Multiplexers — `02_Multiplexers/`](#2-multiplexers--02_multiplexers)
+4. [Demultiplexers and decoders — `03_Decoders_Demux/`](#3-demultiplexers-and-decoders--03_decoders_demux)
+5. [Gray-to-binary conversion — `04_Code_Converters/`](#4-gray-to-binary-conversion--04_code_converters)
+6. [One-bit magnitude comparator — `05_Comparators/`](#5-one-bit-magnitude-comparator--05_comparators)
+7. [Scope and next work](#scope-and-next-work)
+
 ## VLSI, FPGA, and RTL
 
 VLSI design covers the path from defining a circuit's behavior to implementing and checking it. In this repository, the focus is on RTL and basic simulation. An FPGA implements logic using configurable resources, while the RTL description defines the intended logic behavior before synthesis.
